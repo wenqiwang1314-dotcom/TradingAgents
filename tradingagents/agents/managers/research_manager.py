@@ -1,5 +1,6 @@
 
 from tradingagents.agents.utils.agent_utils import build_instrument_context
+from tradingagents.rating import RATING_SCALE_PROMPT
 
 
 def create_research_manager(llm):
@@ -9,13 +10,16 @@ def create_research_manager(llm):
 
         investment_debate_state = state["investment_debate_state"]
 
-        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, the bull analyst, or choose Hold only if it is strongly justified based on the arguments presented.
+        prompt = f"""As the portfolio manager and debate facilitator, your role is to critically evaluate this round of debate and make a definitive decision: align with the bear analyst, align with the bull analyst, or choose a neutral stance only if it is strongly justified based on the arguments presented.
 
-Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation—Buy, Sell, or Hold—must be clear and actionable. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
+{RATING_SCALE_PROMPT}
+
+Summarize the key points from both sides concisely, focusing on the most compelling evidence or reasoning. Your recommendation must use exactly one five-point rating: Buy, Overweight, Hold, Underweight, or Sell. Avoid defaulting to Hold simply because both sides have valid points; commit to a stance grounded in the debate's strongest arguments.
 
 Additionally, develop a detailed investment plan for the trader. This should include:
 
-Your Recommendation: A decisive stance supported by the most convincing arguments.
+Your Recommendation: A decisive five-point rating supported by the most convincing arguments.
+Trade Action: BUY, HOLD, or SELL using the mapping above.
 Rationale: An explanation of why these arguments lead to your conclusion.
 Strategic Actions: Concrete steps for implementing the recommendation.
 Present your analysis conversationally, as if speaking naturally, without special formatting.

@@ -1,0 +1,257 @@
+{
+  "id": "20260428T142156Z_KO",
+  "status": "running",
+  "started_at": "2026-04-28T14:21:56.502973+00:00",
+  "market": "US",
+  "arena_symbol": "gb_ko",
+  "tradingagents_symbol": "KO",
+  "stock_name": "Coca-Cola",
+  "trade_date": "2026-04-28",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-04-28T14:21:56.502612+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "US",
+    "selected": {
+      "symbol": "gb_ko",
+      "name": "Coca-Cola",
+      "market": "US",
+      "price": 79.5851,
+      "change_rate": 0.054945652173913034,
+      "volume": 8967039.0,
+      "score": 66.26,
+      "sources": [
+        "stocks",
+        "top_movers"
+      ],
+      "reasons": [
+        "positive momentum",
+        "top mover rank 1",
+        "volume 8,967,039"
+      ],
+      "penalties": [],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 120,
+      "top_movers_count": 5,
+      "stocks_count": 120,
+      "combined_count": 123,
+      "stocks_total": 191,
+      "latest_trade_date": "2026-04-28"
+    },
+    "top_candidates": [
+      {
+        "symbol": "gb_ko",
+        "name": "Coca-Cola",
+        "market": "US",
+        "price": 79.5851,
+        "change_rate": 0.054945652173913034,
+        "volume": 8967039.0,
+        "score": 66.26,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 1",
+          "volume 8,967,039"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_nio",
+        "name": "蔚来",
+        "market": "US",
+        "price": 6.445,
+        "change_rate": 0.034510433386837853,
+        "volume": 0.0,
+        "score": 39.39,
+        "sources": [
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 2"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_wday",
+        "name": "Workday",
+        "market": "US",
+        "price": 121.18,
+        "change_rate": 0.028430790121361356,
+        "volume": 0.0,
+        "score": 33.5,
+        "sources": [
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 3"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_intc",
+        "name": "Intel",
+        "market": null,
+        "price": 83.595,
+        "change_rate": -0.0164,
+        "volume": 38251005.0,
+        "score": 28.96,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 38,251,005",
+          "close near intraday high",
+          "existing holding"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_intu",
+        "name": "Intuit",
+        "market": "US",
+        "price": 399.66,
+        "change_rate": 0.02497948297086584,
+        "volume": 349968.0,
+        "score": 28.74,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 4",
+          "volume 349,968"
+        ],
+        "penalties": [
+          "low volume 349968"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_t",
+        "name": "AT&T",
+        "market": "US",
+        "price": 26.145,
+        "change_rate": 0.024490595611285266,
+        "volume": 0.0,
+        "score": 25.63,
+        "sources": [
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 5"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_cvx",
+        "name": "Chevron",
+        "market": null,
+        "price": 188.38,
+        "change_rate": 0.0195,
+        "volume": 2210765.0,
+        "score": 25.01,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 2,210,765",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_crm",
+        "name": "Salesforce",
+        "market": null,
+        "price": 183.5,
+        "change_rate": 0.0184,
+        "volume": 1722080.0,
+        "score": 23.42,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 1,722,080"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_amd",
+        "name": "AMD",
+        "market": null,
+        "price": 325.4,
+        "change_rate": -0.0276,
+        "volume": 16288569.0,
+        "score": 21.4,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 16,288,569",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_lcid",
+        "name": "Lucid Group",
+        "market": null,
+        "price": 5.99,
+        "change_rate": 0.0101,
+        "volume": 3527549.0,
+        "score": 20.25,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 3,527,549",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 KO (Coca-Cola)，分析师: market。\n\n选股理由: positive momentum, top mover rank 1, volume 8,967,039"
+    }
+  ],
+  "updated_at": "2026-04-28T14:21:56.503005+00:00"
+}

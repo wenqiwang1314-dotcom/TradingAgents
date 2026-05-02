@@ -1,9 +1,12 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from tradingagents.agents.utils.agent_utils import (
+    analyst_convergence_instruction,
+    analyst_tool_call_count,
     build_instrument_context,
     get_indicators,
     get_language_instruction,
     get_stock_data,
+    has_analyst_final_marker,
 )
 from tradingagents.dataflows.config import get_config
 
@@ -13,6 +16,9 @@ def create_market_analyst(llm):
     def market_analyst_node(state):
         current_date = state["trade_date"]
         instrument_context = build_instrument_context(state["company_of_interest"])
+        config = get_config()
+        max_tool_calls = config.get("max_analyst_tool_iterations", 4)
+        tool_call_count = analyst_tool_call_count(state["messages"])
 
         tools = [
             get_stock_data,
@@ -44,8 +50,12 @@ Volatility Indicators:
 Volume-Based Indicators:
 - vwma: VWMA: A moving average weighted by volume. Usage: Confirm trends by integrating price action with volume data. Tips: Watch for skewed results from volume spikes; use in combination with other volume analyses.
 
-- Select indicators that provide diverse and complementary information. Avoid redundancy (e.g., do not select both rsi and stochrsi). Also briefly explain why they are suitable for the given market context. When you tool call, please use the exact name of the indicators provided above as they are defined parameters, otherwise your call will fail. Please make sure to call get_stock_data first to retrieve the CSV that is needed to generate indicators. Then use get_indicators with the specific indicator names. Write a very detailed and nuanced report of the trends you observe. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."""
+- Select indicators that provide diverse and complementary information. Avoid redundancy (e.g., do not select both rsi and stochrsi). Also briefly explain why they are suitable for the given market context. When you tool call, please use the exact name of the indicators provided above as they are defined parameters, otherwise your call will fail. Please make sure to call get_stock_data first to retrieve the CSV that is needed to generate indicators. Then use get_indicators with the specific indicator names.
+- For local tool-calling models, keep the workflow short: after get_stock_data, use no more than three high-value indicator calls unless absolutely necessary. Prefer close_50_sma, close_200_sma, and macd for a compact trend/momentum view.
+- When you have enough information, you MUST stop using tools and output your final market analyst report starting with [FINAL_ANALYST_REPORT]. Never include tool calls in the same response as [FINAL_ANALYST_REPORT].
+Write a very detailed and nuanced report of the trends you observe. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."""
             + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
+            + analyst_convergence_instruction(tool_call_count, max_tool_calls)
             + get_language_instruction()
         )
 
@@ -57,8 +67,7 @@ Volume-Based Indicators:
                     " Use the provided tools to progress towards answering the question."
                     " If you are unable to fully answer, that's OK; another assistant with different tools"
                     " will help where you left off. Execute what you can to make progress."
-                    " If you or any other assistant has the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
-                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
+                    " Analysts should provide evidence reports, not final trade ratings."
                     " You have access to the following tools: {tool_names}.\n{system_message}"
                     "For your reference, the current date is {current_date}. {instrument_context}",
                 ),
@@ -77,7 +86,13 @@ Volume-Based Indicators:
 
         report = ""
 
-        if len(result.tool_calls) == 0:
+        budget_exhausted = tool_call_count >= max_tool_calls
+
+        if (
+            len(result.tool_calls) == 0
+            or has_analyst_final_marker(result)
+            or (budget_exhausted and result.content)
+        ):
             report = result.content
 
         return {

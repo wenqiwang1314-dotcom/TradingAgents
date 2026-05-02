@@ -25,6 +25,7 @@ from rich.align import Align
 from rich.rule import Rule
 
 from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.rating import action_from_rating
 from tradingagents.default_config import DEFAULT_CONFIG
 from cli.models import AnalystType
 from cli.utils import *
@@ -1155,6 +1156,8 @@ def run_analysis(checkpoint: bool = False):
         # Get final state and decision
         final_state = trace[-1]
         decision = graph.process_signal(final_state["final_trade_decision"])
+        final_state["final_trade_rating"] = decision
+        final_state["final_trade_action"] = action_from_rating(decision)
 
         # Update all agent statuses to completed
         for agent in message_buffer.agent_status:

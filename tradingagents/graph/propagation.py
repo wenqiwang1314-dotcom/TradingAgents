@@ -11,9 +11,10 @@ from tradingagents.agents.utils.agent_states import (
 class Propagator:
     """Handles state initialization and propagation through the graph."""
 
-    def __init__(self, max_recur_limit=100):
+    def __init__(self, max_recur_limit=100, max_concurrency=None):
         """Initialize with configuration parameters."""
         self.max_recur_limit = max_recur_limit
+        self.max_concurrency = max_concurrency
 
     def create_initial_state(
         self, company_name: str, trade_date: str, past_context: str = ""
@@ -21,6 +22,10 @@ class Propagator:
         """Create the initial state for the agent graph."""
         return {
             "messages": [("human", company_name)],
+            "market_messages": [("human", company_name)],
+            "social_messages": [("human", company_name)],
+            "news_messages": [("human", company_name)],
+            "fundamentals_messages": [("human", company_name)],
             "company_of_interest": company_name,
             "trade_date": str(trade_date),
             "past_context": past_context,
@@ -52,6 +57,14 @@ class Propagator:
             "fundamentals_report": "",
             "sentiment_report": "",
             "news_report": "",
+            "social_prefetch": "",
+            "news_prefetch": "",
+            "fundamentals_prefetch": "",
+            "social_prefetch_metrics": {},
+            "news_prefetch_metrics": {},
+            "fundamentals_prefetch_metrics": {},
+            "final_trade_rating": "",
+            "final_trade_action": "",
         }
 
     def get_graph_args(self, callbacks: Optional[List] = None) -> Dict[str, Any]:
@@ -62,6 +75,8 @@ class Propagator:
                        Note: LLM callbacks are handled separately via LLM constructor.
         """
         config = {"recursion_limit": self.max_recur_limit}
+        if self.max_concurrency:
+            config["max_concurrency"] = self.max_concurrency
         if callbacks:
             config["callbacks"] = callbacks
         return {

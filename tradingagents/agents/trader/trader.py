@@ -1,6 +1,7 @@
 import functools
 
 from tradingagents.agents.utils.agent_utils import build_instrument_context
+from tradingagents.rating import RATING_SCALE_PROMPT
 
 
 def create_trader(llm):
@@ -17,7 +18,17 @@ def create_trader(llm):
         messages = [
             {
                 "role": "system",
-                "content": "You are a trading agent analyzing market data to make investment decisions. Based on your analysis, provide a specific recommendation to buy, sell, or hold. End with a firm decision and always conclude your response with 'FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL**' to confirm your recommendation.",
+                "content": (
+                    "You are a trading agent analyzing market data to make investment decisions. "
+                    "Use the same five-point rating scale as the Portfolio Manager, then map that "
+                    "rating to an executable trade action.\n\n"
+                    f"{RATING_SCALE_PROMPT}\n\n"
+                    "Required output structure:\n"
+                    "1. Rating: State exactly one of Buy / Overweight / Hold / Underweight / Sell.\n"
+                    "2. Trade Action: State exactly one of BUY / HOLD / SELL using the mapping above.\n"
+                    "3. Execution Plan: Entry/exit approach, position sizing, risk levels, and time horizon.\n"
+                    "Be decisive, but keep the rating and trade action distinct."
+                ),
             },
             context,
         ]

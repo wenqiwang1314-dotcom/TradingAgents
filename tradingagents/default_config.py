@@ -26,6 +26,11 @@ DEFAULT_CONFIG = {
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
     "max_recur_limit": 100,
+    "max_concurrency": 4,
+    # Data fetch prefetch runs independent data sources inside each analyst
+    # before the LLM synthesis step, then records timing metrics in the final log.
+    "parallel_data_prefetch_enabled": True,
+    "max_data_fetch_concurrency": 4,
     # Data vendor configuration
     # Category-level configuration (default for all tools in category)
     "data_vendors": {

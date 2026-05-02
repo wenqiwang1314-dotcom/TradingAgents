@@ -1,0 +1,254 @@
+{
+  "id": "20260430T041018Z_600900.SS",
+  "status": "running",
+  "started_at": "2026-04-30T04:10:18.129795+00:00",
+  "market": "CN",
+  "arena_symbol": "sh600900",
+  "tradingagents_symbol": "600900.SS",
+  "stock_name": "长江电力",
+  "trade_date": "2026-04-30",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-04-30T04:10:18.129383+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "CN",
+    "selected": {
+      "symbol": "sh600900",
+      "name": "长江电力",
+      "market": null,
+      "price": 27.27,
+      "change_rate": 0.0187,
+      "volume": 118618231.0,
+      "score": 21.76,
+      "sources": [
+        "stocks"
+      ],
+      "reasons": [
+        "positive momentum",
+        "volume 118,618,231",
+        "existing holding"
+      ],
+      "penalties": [
+        "recently analyzed"
+      ],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 320,
+      "top_movers_count": 5,
+      "stocks_count": 285,
+      "combined_count": 285,
+      "stocks_total": 285,
+      "latest_trade_date": "2026-04-30",
+      "allowed_markets": [
+        "CN"
+      ],
+      "whitelist_size": 13
+    },
+    "top_candidates": [
+      {
+        "symbol": "sh600900",
+        "name": "长江电力",
+        "market": null,
+        "price": 27.27,
+        "change_rate": 0.0187,
+        "volume": 118618231.0,
+        "score": 21.76,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 118,618,231",
+          "existing holding"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz002415",
+        "name": "海康威视",
+        "market": null,
+        "price": 36.28,
+        "change_rate": 0.0422,
+        "volume": 75697549.0,
+        "score": 21.58,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 75,697,549",
+          "close near intraday high"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600276",
+        "name": "恒瑞医药",
+        "market": null,
+        "price": 54.18,
+        "change_rate": -0.0147,
+        "volume": 38073266.0,
+        "score": 15.01,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 38,073,266"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz000651",
+        "name": "格力电器",
+        "market": null,
+        "price": 40.34,
+        "change_rate": -0.0032,
+        "volume": 43427046.0,
+        "score": 14.97,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 43,427,046"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600150",
+        "name": "中国船舶",
+        "market": null,
+        "price": 42.27,
+        "change_rate": 0.027,
+        "volume": 152996282.0,
+        "score": 14.14,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 152,996,282"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh601100",
+        "name": "恒立液压",
+        "market": null,
+        "price": 104.96,
+        "change_rate": -0.0004,
+        "volume": 5456314.0,
+        "score": 13.58,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 5,456,314"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600309",
+        "name": "万华化学",
+        "market": null,
+        "price": 88.66,
+        "change_rate": -0.0187,
+        "volume": 13158489.0,
+        "score": 12.68,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 13,158,489"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz000858",
+        "name": "五粮液",
+        "market": null,
+        "price": 97.12,
+        "change_rate": -0.0124,
+        "volume": 13254079.0,
+        "score": 12.35,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 13,254,079"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz300750",
+        "name": "宁德时代",
+        "market": null,
+        "price": 437.31,
+        "change_rate": -0.0173,
+        "volume": 16020994.0,
+        "score": 12.15,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 16,020,994"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600036",
+        "name": "招商银行",
+        "market": null,
+        "price": 38.12,
+        "change_rate": -0.0099,
+        "volume": 68316717.0,
+        "score": 12.0,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 68,316,717"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 600900.SS (长江电力)，分析师: market。\n\n选股理由: positive momentum, volume 118,618,231, existing holding"
+    }
+  ],
+  "updated_at": "2026-04-30T04:10:18.129828+00:00"
+}

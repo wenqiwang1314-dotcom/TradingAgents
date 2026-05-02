@@ -1,6 +1,6 @@
 from typing import Annotated
 from typing_extensions import TypedDict
-from langgraph.graph import MessagesState
+from langgraph.graph import MessagesState, add_messages
 
 
 # Researcher team state
@@ -49,6 +49,23 @@ class AgentState(MessagesState):
 
     sender: Annotated[str, "Agent that sent this message"]
 
+    # Per-analyst message channels. Analysts run in parallel, so their
+    # tool-call loops must not share the global MessagesState channel.
+    market_messages: Annotated[list, add_messages]
+    social_messages: Annotated[list, add_messages]
+    news_messages: Annotated[list, add_messages]
+    fundamentals_messages: Annotated[list, add_messages]
+
+    # Concurrent data prefetch results and timing metrics.
+    social_prefetch: Annotated[str, "Prefetched social/news data"]
+    news_prefetch: Annotated[str, "Prefetched news, macro, and insider data"]
+    fundamentals_prefetch: Annotated[str, "Prefetched fundamentals data"]
+    social_prefetch_metrics: Annotated[dict, "Social prefetch timing metrics"]
+    news_prefetch_metrics: Annotated[dict, "News prefetch timing metrics"]
+    fundamentals_prefetch_metrics: Annotated[
+        dict, "Fundamentals prefetch timing metrics"
+    ]
+
     # research step
     market_report: Annotated[str, "Report from the Market Analyst"]
     sentiment_report: Annotated[str, "Report from the Social Media Analyst"]
@@ -70,4 +87,8 @@ class AgentState(MessagesState):
         RiskDebateState, "Current state of the debate on evaluating risk"
     ]
     final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
+    final_trade_rating: Annotated[
+        str, "Canonical five-point rating: Buy/Overweight/Hold/Underweight/Sell"
+    ]
+    final_trade_action: Annotated[str, "Executable action mapped from rating: buy/sell/hold"]
     past_context: Annotated[str, "Memory log context injected at run start (same-ticker decisions + cross-ticker lessons)"]

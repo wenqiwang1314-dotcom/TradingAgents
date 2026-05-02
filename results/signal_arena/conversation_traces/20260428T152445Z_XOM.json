@@ -1,0 +1,248 @@
+{
+  "id": "20260428T152445Z_XOM",
+  "status": "running",
+  "started_at": "2026-04-28T15:24:45.904620+00:00",
+  "market": "US",
+  "arena_symbol": "gb_xom",
+  "tradingagents_symbol": "XOM",
+  "stock_name": "Exxon Mobil",
+  "trade_date": "2026-04-28",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-04-28T15:24:45.903973+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "US",
+    "selected": {
+      "symbol": "gb_xom",
+      "name": "Exxon Mobil",
+      "market": null,
+      "price": 150.93,
+      "change_rate": 0.0185,
+      "volume": 4548945.0,
+      "score": 22.05,
+      "sources": [
+        "stocks"
+      ],
+      "reasons": [
+        "positive momentum",
+        "volume 4,548,945"
+      ],
+      "penalties": [],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 320,
+      "top_movers_count": 5,
+      "stocks_count": 191,
+      "combined_count": 191,
+      "stocks_total": 191,
+      "latest_trade_date": "2026-04-28",
+      "allowed_markets": [
+        "CN",
+        "US"
+      ],
+      "whitelist_size": 13
+    },
+    "top_candidates": [
+      {
+        "symbol": "gb_xom",
+        "name": "Exxon Mobil",
+        "market": null,
+        "price": 150.93,
+        "change_rate": 0.0185,
+        "volume": 4548945.0,
+        "score": 22.05,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 4,548,945"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_amzn",
+        "name": "Amazon",
+        "market": null,
+        "price": 260.0099,
+        "change_rate": -0.0043,
+        "volume": 14451544.0,
+        "score": 19.68,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 14,451,544",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_adbe",
+        "name": "Adobe",
+        "market": null,
+        "price": 242.6075,
+        "change_rate": 0.0138,
+        "volume": 1488707.0,
+        "score": 18.53,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 1,488,707"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_abt",
+        "name": "Abbott Labs",
+        "market": null,
+        "price": 93.88,
+        "change_rate": 0.0116,
+        "volume": 2608726.0,
+        "score": 16.4,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 2,608,726"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_msft",
+        "name": "Microsoft",
+        "market": null,
+        "price": 425.845,
+        "change_rate": 0.0024,
+        "volume": 8627657.0,
+        "score": 15.52,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 8,627,657"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_goog",
+        "name": "Alphabet",
+        "market": null,
+        "price": 348.4,
+        "change_rate": -0.0003,
+        "volume": 6155288.0,
+        "score": 15.33,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 6,155,288",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_tsla",
+        "name": "Tesla",
+        "market": null,
+        "price": 375.69,
+        "change_rate": -0.0079,
+        "volume": 22451905.0,
+        "score": 15.23,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 22,451,905"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_nvda",
+        "name": "NVIDIA",
+        "market": null,
+        "price": 209.755,
+        "change_rate": -0.0316,
+        "volume": 75133919.0,
+        "score": 14.84,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 75,133,919"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_jpm",
+        "name": "JPMorgan Chase",
+        "market": null,
+        "price": 313.38,
+        "change_rate": 0.0056,
+        "volume": 1461278.0,
+        "score": 14.64,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 1,461,278"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_avgo",
+        "name": "Broadcom",
+        "market": null,
+        "price": 399.73,
+        "change_rate": -0.0442,
+        "volume": 8187370.0,
+        "score": 11.18,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 8,187,370"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 XOM (Exxon Mobil)，分析师: market。\n\n选股理由: positive momentum, volume 4,548,945"
+    }
+  ],
+  "updated_at": "2026-04-28T15:24:45.904680+00:00"
+}

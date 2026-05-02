@@ -1,0 +1,261 @@
+{
+  "id": "20260501T141738Z_AAPL",
+  "status": "running",
+  "started_at": "2026-05-01T14:17:38.891606+00:00",
+  "market": "US",
+  "arena_symbol": "gb_aapl",
+  "tradingagents_symbol": "AAPL",
+  "stock_name": "Apple",
+  "trade_date": "2026-05-01",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-05-01T14:17:38.891192+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "US",
+    "selected": {
+      "symbol": "gb_aapl",
+      "name": "Apple",
+      "market": "US",
+      "price": 286.11,
+      "change_rate": 0.05439469320066331,
+      "volume": 26672763.0,
+      "score": 66.59,
+      "sources": [
+        "stocks",
+        "top_movers"
+      ],
+      "reasons": [
+        "positive momentum",
+        "top mover rank 3",
+        "volume 26,672,763",
+        "close near intraday high"
+      ],
+      "penalties": [],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 320,
+      "top_movers_count": 5,
+      "stocks_count": 191,
+      "combined_count": 191,
+      "stocks_total": 191,
+      "latest_trade_date": "2026-05-01",
+      "allowed_markets": [
+        "CN",
+        "US"
+      ],
+      "whitelist_size": 13
+    },
+    "top_candidates": [
+      {
+        "symbol": "gb_aapl",
+        "name": "Apple",
+        "market": "US",
+        "price": 286.11,
+        "change_rate": 0.05439469320066331,
+        "volume": 26672763.0,
+        "score": 66.59,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 3",
+          "volume 26,672,763",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_mu",
+        "name": "Micron Technology",
+        "market": "US",
+        "price": 543.1699,
+        "change_rate": 0.05029371954520848,
+        "volume": 12435684.0,
+        "score": 59.12,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 5",
+          "volume 12,435,684",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_amzn",
+        "name": "Amazon",
+        "market": null,
+        "price": 272.775,
+        "change_rate": 0.0291,
+        "volume": 13103539.0,
+        "score": 35.31,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 13,103,539",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_tsla",
+        "name": "Tesla",
+        "market": null,
+        "price": 386.309,
+        "change_rate": 0.0123,
+        "volume": 11582348.0,
+        "score": 26.57,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 11,582,348",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_avgo",
+        "name": "Broadcom",
+        "market": null,
+        "price": 420.56,
+        "change_rate": 0.0075,
+        "volume": 1994341.0,
+        "score": 19.71,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 1,994,341",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_msft",
+        "name": "Microsoft",
+        "market": null,
+        "price": 412.835,
+        "change_rate": 0.0124,
+        "volume": 6810318.0,
+        "score": 18.0,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 6,810,318"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_goog",
+        "name": "Alphabet",
+        "market": null,
+        "price": 380.3,
+        "change_rate": -0.0043,
+        "volume": 8600258.0,
+        "score": 15.5,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 8,600,258",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_nvda",
+        "name": "NVIDIA",
+        "market": null,
+        "price": 199.9633,
+        "change_rate": 0.002,
+        "volume": 29924196.0,
+        "score": 15.08,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 29,924,196"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_abt",
+        "name": "Abbott Labs",
+        "market": null,
+        "price": 90.14,
+        "change_rate": -0.0072,
+        "volume": 2694517.0,
+        "score": 13.39,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 2,694,517"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_xom",
+        "name": "Exxon Mobil",
+        "market": null,
+        "price": 152.29,
+        "change_rate": -0.0132,
+        "volume": 4450194.0,
+        "score": 10.99,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 4,450,194"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 AAPL (Apple)，分析师: market。\n\n选股理由: positive momentum, top mover rank 3, volume 26,672,763, close near intraday high"
+    }
+  ],
+  "updated_at": "2026-05-01T14:17:38.891639+00:00"
+}

@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 from langgraph.prebuilt import ToolNode
 
 from tradingagents.llm_clients import create_llm_client
+from tradingagents.llm_clients.base_client import strip_reasoning_traces
 
 from tradingagents.agents import *
 from tradingagents.default_config import DEFAULT_CONFIG
@@ -42,6 +43,7 @@ from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, t
 from .conditional_logic import ConditionalLogic
 from .setup import GraphSetup
 from .propagation import Propagator
+from tradingagents.rating import action_from_rating
 from .reflection import Reflector
 from .signal_processing import SignalProcessor
 
@@ -107,6 +109,9 @@ class TradingAgentsGraph:
         self.conditional_logic = ConditionalLogic(
             max_debate_rounds=self.config["max_debate_rounds"],
             max_risk_discuss_rounds=self.config["max_risk_discuss_rounds"],
+            max_analyst_tool_iterations=self.config.get(
+                "max_analyst_tool_iterations", 4
+            ),
         )
         self.graph_setup = GraphSetup(
             self.quick_thinking_llm,
@@ -115,7 +120,10 @@ class TradingAgentsGraph:
             self.conditional_logic,
         )
 
-        self.propagator = Propagator()
+        self.propagator = Propagator(
+            max_recur_limit=self.config.get("max_recur_limit", 100),
+            max_concurrency=self.config.get("max_concurrency", 4),
+        )
         self.reflector = Reflector(self.quick_thinking_llm)
         self.signal_processor = SignalProcessor(self.quick_thinking_llm)
 
@@ -133,6 +141,10 @@ class TradingAgentsGraph:
         """Get provider-specific kwargs for LLM client creation."""
         kwargs = {}
         provider = self.config.get("llm_provider", "").lower()
+
+        for key in ("timeout", "max_retries", "http_client", "http_async_client"):
+            if key in self.config:
+                kwargs[key] = self.config[key]
 
         if provider == "google":
             thinking_level = self.config.get("google_thinking_level")
@@ -326,6 +338,11 @@ class TradingAgentsGraph:
             final_state = self.graph.invoke(init_agent_state, **args)
 
         # Store current state for reflection.
+        final_rating = self.process_signal(final_state["final_trade_decision"])
+        final_action = action_from_rating(final_rating)
+        final_state["final_trade_rating"] = final_rating
+        final_state["final_trade_action"] = final_action
+
         self.curr_state = final_state
 
         # Log state to disk.
@@ -344,38 +361,48 @@ class TradingAgentsGraph:
                 self.config["data_cache_dir"], company_name, str(trade_date)
             )
 
-        return final_state, self.process_signal(final_state["final_trade_decision"])
+        return final_state, final_rating
 
     def _log_state(self, trade_date, final_state):
         """Log the final state to a JSON file."""
+        def clean(value):
+            return strip_reasoning_traces(value) if isinstance(value, str) else value
+
         self.log_states_dict[str(trade_date)] = {
             "company_of_interest": final_state["company_of_interest"],
             "trade_date": final_state["trade_date"],
-            "market_report": final_state["market_report"],
-            "sentiment_report": final_state["sentiment_report"],
-            "news_report": final_state["news_report"],
-            "fundamentals_report": final_state["fundamentals_report"],
+            "market_report": clean(final_state["market_report"]),
+            "sentiment_report": clean(final_state["sentiment_report"]),
+            "news_report": clean(final_state["news_report"]),
+            "fundamentals_report": clean(final_state["fundamentals_report"]),
             "investment_debate_state": {
-                "bull_history": final_state["investment_debate_state"]["bull_history"],
-                "bear_history": final_state["investment_debate_state"]["bear_history"],
-                "history": final_state["investment_debate_state"]["history"],
-                "current_response": final_state["investment_debate_state"][
-                    "current_response"
-                ],
-                "judge_decision": final_state["investment_debate_state"][
-                    "judge_decision"
-                ],
+                "bull_history": clean(final_state["investment_debate_state"]["bull_history"]),
+                "bear_history": clean(final_state["investment_debate_state"]["bear_history"]),
+                "history": clean(final_state["investment_debate_state"]["history"]),
+                "current_response": clean(
+                    final_state["investment_debate_state"]["current_response"]
+                ),
+                "judge_decision": clean(
+                    final_state["investment_debate_state"]["judge_decision"]
+                ),
             },
-            "trader_investment_decision": final_state["trader_investment_plan"],
+            "trader_investment_decision": clean(final_state["trader_investment_plan"]),
             "risk_debate_state": {
-                "aggressive_history": final_state["risk_debate_state"]["aggressive_history"],
-                "conservative_history": final_state["risk_debate_state"]["conservative_history"],
-                "neutral_history": final_state["risk_debate_state"]["neutral_history"],
-                "history": final_state["risk_debate_state"]["history"],
-                "judge_decision": final_state["risk_debate_state"]["judge_decision"],
+                "aggressive_history": clean(final_state["risk_debate_state"]["aggressive_history"]),
+                "conservative_history": clean(final_state["risk_debate_state"]["conservative_history"]),
+                "neutral_history": clean(final_state["risk_debate_state"]["neutral_history"]),
+                "history": clean(final_state["risk_debate_state"]["history"]),
+                "judge_decision": clean(final_state["risk_debate_state"]["judge_decision"]),
             },
-            "investment_plan": final_state["investment_plan"],
-            "final_trade_decision": final_state["final_trade_decision"],
+            "investment_plan": clean(final_state["investment_plan"]),
+            "final_trade_decision": clean(final_state["final_trade_decision"]),
+            "final_trade_rating": final_state.get("final_trade_rating", ""),
+            "final_trade_action": final_state.get("final_trade_action", ""),
+            "data_fetch_metrics": {
+                "social": final_state.get("social_prefetch_metrics", {}),
+                "news": final_state.get("news_prefetch_metrics", {}),
+                "fundamentals": final_state.get("fundamentals_prefetch_metrics", {}),
+            },
         }
 
         # Save to file

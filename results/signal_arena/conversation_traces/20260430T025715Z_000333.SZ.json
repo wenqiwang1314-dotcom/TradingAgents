@@ -1,0 +1,256 @@
+{
+  "id": "20260430T025715Z_000333.SZ",
+  "status": "running",
+  "started_at": "2026-04-30T02:57:15.886473+00:00",
+  "market": "CN",
+  "arena_symbol": "sz000333",
+  "tradingagents_symbol": "000333.SZ",
+  "stock_name": "美的集团",
+  "trade_date": "2026-04-30",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-04-30T02:57:15.886013+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "CN",
+    "selected": {
+      "symbol": "sz000333",
+      "name": "美的集团",
+      "market": null,
+      "price": 81.87,
+      "change_rate": 0.0069,
+      "volume": 13701403.0,
+      "score": 23.46,
+      "sources": [
+        "stocks"
+      ],
+      "reasons": [
+        "positive momentum",
+        "volume 13,701,403",
+        "close near intraday high"
+      ],
+      "penalties": [],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 320,
+      "top_movers_count": 5,
+      "stocks_count": 285,
+      "combined_count": 285,
+      "stocks_total": 285,
+      "latest_trade_date": "2026-04-30",
+      "allowed_markets": [
+        "CN"
+      ],
+      "whitelist_size": 13
+    },
+    "top_candidates": [
+      {
+        "symbol": "sz000333",
+        "name": "美的集团",
+        "market": null,
+        "price": 81.87,
+        "change_rate": 0.0069,
+        "volume": 13701403.0,
+        "score": 23.46,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 13,701,403",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh601100",
+        "name": "恒立液压",
+        "market": null,
+        "price": 105.34,
+        "change_rate": 0.0032,
+        "volume": 3358890.0,
+        "score": 16.57,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 3,358,890",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600036",
+        "name": "招商银行",
+        "market": null,
+        "price": 38.33,
+        "change_rate": -0.0044,
+        "volume": 39702710.0,
+        "score": 16.19,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 39,702,710"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600276",
+        "name": "恒瑞医药",
+        "market": null,
+        "price": 54.19,
+        "change_rate": -0.0145,
+        "volume": 26470470.0,
+        "score": 15.09,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 26,470,470"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600150",
+        "name": "中国船舶",
+        "market": null,
+        "price": 42.27,
+        "change_rate": 0.027,
+        "volume": 123833344.0,
+        "score": 14.14,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 123,833,344"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz002415",
+        "name": "海康威视",
+        "market": null,
+        "price": 35.56,
+        "change_rate": 0.0215,
+        "volume": 34483860.0,
+        "score": 14.01,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 34,483,860",
+          "close near intraday high"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz300750",
+        "name": "宁德时代",
+        "market": null,
+        "price": 442.16,
+        "change_rate": -0.0064,
+        "volume": 10960282.0,
+        "score": 13.68,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 10,960,282"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600900",
+        "name": "长江电力",
+        "market": null,
+        "price": 27.31,
+        "change_rate": 0.0202,
+        "volume": 95532386.0,
+        "score": 11.3,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 95,532,386",
+          "close near intraday high"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz000858",
+        "name": "五粮液",
+        "market": null,
+        "price": 97.48,
+        "change_rate": -0.0087,
+        "volume": 7607853.0,
+        "score": 11.19,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 7,607,853"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600519",
+        "name": "贵州茅台",
+        "market": null,
+        "price": 1393.3,
+        "change_rate": -0.0056,
+        "volume": 1229002.0,
+        "score": 10.35,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 1,229,002"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 000333.SZ (美的集团)，分析师: market。\n\n选股理由: positive momentum, volume 13,701,403, close near intraday high"
+    }
+  ],
+  "updated_at": "2026-04-30T02:57:15.886509+00:00"
+}

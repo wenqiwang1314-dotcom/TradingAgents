@@ -1,4 +1,5 @@
 from tradingagents.agents.utils.agent_utils import build_instrument_context, get_language_instruction
+from tradingagents.rating import RATING_SCALE_PROMPT
 
 
 def create_portfolio_manager(llm):
@@ -21,9 +22,9 @@ def create_portfolio_manager(llm):
             if past_context else ""
         )
         thesis_instruction = (
-            "3. **Investment Thesis**: Detailed reasoning anchored in the analysts' debate and the lessons from prior decisions."
+            "4. **Investment Thesis**: Detailed reasoning anchored in the analysts' debate and the lessons from prior decisions."
             if past_context
-            else "3. **Investment Thesis**: Detailed reasoning anchored in the analysts' debate."
+            else "4. **Investment Thesis**: Detailed reasoning anchored in the analysts' debate."
         )
 
         prompt = f"""As the Portfolio Manager, synthesize the risk analysts' debate and deliver the final trading decision.
@@ -32,12 +33,7 @@ def create_portfolio_manager(llm):
 
 ---
 
-**Rating Scale** (use exactly one):
-- **Buy**: Strong conviction to enter or add to position
-- **Overweight**: Favorable outlook, gradually increase exposure
-- **Hold**: Maintain current position, no action needed
-- **Underweight**: Reduce exposure, take partial profits
-- **Sell**: Exit position or avoid entry
+{RATING_SCALE_PROMPT}
 
 **Context:**
 - Research Manager's investment plan: **{research_plan}**
@@ -46,7 +42,8 @@ def create_portfolio_manager(llm):
 
 **Required Output Structure:**
 1. **Rating**: State one of Buy / Overweight / Hold / Underweight / Sell.
-2. **Executive Summary**: A concise action plan covering entry strategy, position sizing, key risk levels, and time horizon.
+2. **Trade Action**: State one of BUY / HOLD / SELL using the mapping above.
+3. **Executive Summary**: A concise action plan covering entry strategy, position sizing, key risk levels, and time horizon.
 {thesis_instruction}
 
 ---

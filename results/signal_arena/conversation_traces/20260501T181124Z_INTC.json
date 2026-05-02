@@ -1,0 +1,268 @@
+{
+  "id": "20260501T181124Z_INTC",
+  "status": "running",
+  "started_at": "2026-05-01T18:11:24.966838+00:00",
+  "market": "US",
+  "arena_symbol": "gb_intc",
+  "tradingagents_symbol": "INTC",
+  "stock_name": "Intel",
+  "trade_date": "2026-05-01",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-05-01T18:11:24.966419+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "US",
+    "selected": {
+      "symbol": "gb_intc",
+      "name": "Intel",
+      "market": "US",
+      "price": 99.415,
+      "change_rate": 0.052233276883996635,
+      "volume": 84018803.0,
+      "score": 49.49,
+      "sources": [
+        "stocks",
+        "top_movers"
+      ],
+      "reasons": [
+        "positive momentum",
+        "top mover rank 5",
+        "volume 84,018,803",
+        "close near intraday high",
+        "existing holding"
+      ],
+      "penalties": [
+        "recently analyzed"
+      ],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 320,
+      "top_movers_count": 5,
+      "stocks_count": 191,
+      "combined_count": 191,
+      "stocks_total": 191,
+      "latest_trade_date": "2026-05-01",
+      "allowed_markets": [
+        "CN",
+        "US"
+      ],
+      "whitelist_size": 14
+    },
+    "top_candidates": [
+      {
+        "symbol": "gb_intc",
+        "name": "Intel",
+        "market": "US",
+        "price": 99.415,
+        "change_rate": 0.052233276883996635,
+        "volume": 84018803.0,
+        "score": 49.49,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 5",
+          "volume 84,018,803",
+          "close near intraday high",
+          "existing holding"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_tsla",
+        "name": "Tesla",
+        "market": null,
+        "price": 392.655,
+        "change_rate": 0.0289,
+        "volume": 26085514.0,
+        "score": 35.38,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 26,085,514",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_msft",
+        "name": "Microsoft",
+        "market": null,
+        "price": 414.52,
+        "change_rate": 0.0165,
+        "volume": 13287448.0,
+        "score": 26.84,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 13,287,448",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_amzn",
+        "name": "Amazon",
+        "market": null,
+        "price": 269.4692,
+        "change_rate": 0.0166,
+        "volume": 21686695.0,
+        "score": 26.25,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 21,686,695"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_avgo",
+        "name": "Broadcom",
+        "market": null,
+        "price": 421.82,
+        "change_rate": 0.0105,
+        "volume": 3909652.0,
+        "score": 22.54,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 3,909,652",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_aapl",
+        "name": "Apple",
+        "market": null,
+        "price": 283.99,
+        "change_rate": 0.0466,
+        "volume": 39342493.0,
+        "score": 22.49,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 39,342,493"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_goog",
+        "name": "Alphabet",
+        "market": null,
+        "price": 381.91,
+        "change_rate": -0.0001,
+        "volume": 13499349.0,
+        "score": 21.0,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 13,499,349",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_adbe",
+        "name": "Adobe",
+        "market": null,
+        "price": 248.875,
+        "change_rate": 0.0113,
+        "volume": 2057563.0,
+        "score": 18.42,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 2,057,563"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_meta",
+        "name": "Meta Platforms",
+        "market": null,
+        "price": 614.4,
+        "change_rate": 0.0041,
+        "volume": 8662657.0,
+        "score": 16.44,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 8,662,657"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_jpm",
+        "name": "JPMorgan Chase",
+        "market": null,
+        "price": 314.23,
+        "change_rate": 0.0032,
+        "volume": 1518129.0,
+        "score": 15.17,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 1,518,129"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 INTC (Intel)，分析师: market。\n\n选股理由: positive momentum, top mover rank 5, volume 84,018,803, close near intraday high, existing holding"
+    }
+  ],
+  "updated_at": "2026-05-01T18:11:24.966870+00:00"
+}

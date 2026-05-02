@@ -1,0 +1,261 @@
+{
+  "id": "20260429T054959Z_000651.SZ",
+  "status": "running",
+  "started_at": "2026-04-29T05:49:59.867152+00:00",
+  "market": "CN",
+  "arena_symbol": "sz000651",
+  "tradingagents_symbol": "000651.SZ",
+  "stock_name": "格力电器",
+  "trade_date": "2026-04-29",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-04-29T05:49:59.866723+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "CN",
+    "selected": {
+      "symbol": "sz000651",
+      "name": "格力电器",
+      "market": null,
+      "price": 40.62,
+      "change_rate": 0.0567,
+      "volume": 165123304.0,
+      "score": 40.9,
+      "sources": [
+        "stocks"
+      ],
+      "reasons": [
+        "positive momentum",
+        "volume 165,123,304",
+        "close near intraday high",
+        "existing holding"
+      ],
+      "penalties": [
+        "recently analyzed"
+      ],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 320,
+      "top_movers_count": 5,
+      "stocks_count": 285,
+      "combined_count": 285,
+      "stocks_total": 285,
+      "latest_trade_date": "2026-04-29",
+      "allowed_markets": [
+        "CN"
+      ],
+      "whitelist_size": 13
+    },
+    "top_candidates": [
+      {
+        "symbol": "sz000651",
+        "name": "格力电器",
+        "market": null,
+        "price": 40.62,
+        "change_rate": 0.0567,
+        "volume": 165123304.0,
+        "score": 40.9,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 165,123,304",
+          "close near intraday high",
+          "existing holding"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz300750",
+        "name": "宁德时代",
+        "market": null,
+        "price": 440.56,
+        "change_rate": 0.0301,
+        "volume": 24102472.0,
+        "score": 35.96,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 24,102,472",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600309",
+        "name": "万华化学",
+        "market": null,
+        "price": 89.97,
+        "change_rate": 0.0055,
+        "volume": 18975039.0,
+        "score": 22.44,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 18,975,039",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh601318",
+        "name": "中国平安",
+        "market": null,
+        "price": 59.25,
+        "change_rate": 0.0281,
+        "volume": 118523854.0,
+        "score": 21.35,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 118,523,854",
+          "close near intraday high"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600276",
+        "name": "恒瑞医药",
+        "market": null,
+        "price": 54.89,
+        "change_rate": 0.0009,
+        "volume": 43631169.0,
+        "score": 21.27,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 43,631,169",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz002415",
+        "name": "海康威视",
+        "market": null,
+        "price": 34.81,
+        "change_rate": 0.0046,
+        "volume": 46837284.0,
+        "score": 19.33,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 46,837,284"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz000858",
+        "name": "五粮液",
+        "market": null,
+        "price": 98.08,
+        "change_rate": -0.0212,
+        "volume": 27373816.0,
+        "score": 18.75,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 27,373,816"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600036",
+        "name": "招商银行",
+        "market": null,
+        "price": 38.47,
+        "change_rate": -0.0285,
+        "volume": 207822405.0,
+        "score": 17.91,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 207,822,405"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz000333",
+        "name": "美的集团",
+        "market": null,
+        "price": 80.85,
+        "change_rate": 0.005,
+        "volume": 22844667.0,
+        "score": 17.06,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 22,844,667"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600900",
+        "name": "长江电力",
+        "market": null,
+        "price": 26.7,
+        "change_rate": -0.0011,
+        "volume": 61992736.0,
+        "score": 17.0,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 61,992,736"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 000651.SZ (格力电器)，分析师: market。\n\n选股理由: positive momentum, volume 165,123,304, close near intraday high, existing holding"
+    }
+  ],
+  "updated_at": "2026-04-29T05:49:59.867185+00:00"
+}

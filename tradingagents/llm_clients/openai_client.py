@@ -58,9 +58,10 @@ class OpenAIClient(BaseLLMClient):
         """Return configured ChatOpenAI instance."""
         self.warn_if_unknown_model()
         llm_kwargs = {"model": self.model}
+        using_custom_base_url = bool(self.base_url)
 
         # Provider-specific base URL and auth
-        if self.provider in _PROVIDER_CONFIG:
+        if self.provider in _PROVIDER_CONFIG and not using_custom_base_url:
             base_url, api_key_env = _PROVIDER_CONFIG[self.provider]
             llm_kwargs["base_url"] = base_url
             if api_key_env:
@@ -69,8 +70,9 @@ class OpenAIClient(BaseLLMClient):
                     llm_kwargs["api_key"] = api_key
             else:
                 llm_kwargs["api_key"] = "ollama"
-        elif self.base_url:
+        elif using_custom_base_url:
             llm_kwargs["base_url"] = self.base_url
+            llm_kwargs["api_key"] = os.environ.get("OPENAI_API_KEY", "dummy")
 
         # Forward user-provided kwargs
         for key in _PASSTHROUGH_KWARGS:
@@ -79,7 +81,7 @@ class OpenAIClient(BaseLLMClient):
 
         # Native OpenAI: use Responses API for consistent behavior across
         # all model families. Third-party providers use Chat Completions.
-        if self.provider == "openai":
+        if self.provider == "openai" and not using_custom_base_url:
             llm_kwargs["use_responses_api"] = True
 
         return NormalizedChatOpenAI(**llm_kwargs)

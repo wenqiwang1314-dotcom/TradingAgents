@@ -1,0 +1,270 @@
+{
+  "id": "20260428T083444Z_MU",
+  "status": "failed",
+  "started_at": "2026-04-28T08:34:44.948130+00:00",
+  "market": "US",
+  "arena_symbol": "gb_mu",
+  "tradingagents_symbol": "MU",
+  "stock_name": "Micron Technology",
+  "trade_date": "2026-04-28",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-04-28T08:34:44.947784+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "US",
+    "selected": {
+      "symbol": "gb_mu",
+      "name": "Micron Technology",
+      "market": "US",
+      "price": 524.56,
+      "change_rate": 0.05604767273312916,
+      "volume": 38114100.0,
+      "score": 68.44,
+      "sources": [
+        "stocks",
+        "top_movers"
+      ],
+      "reasons": [
+        "positive momentum",
+        "top mover rank 2",
+        "volume 38,114,100"
+      ],
+      "penalties": [],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 120,
+      "top_movers_count": 5,
+      "stocks_count": 120,
+      "combined_count": 122,
+      "stocks_total": 191,
+      "latest_trade_date": "2026-04-28"
+    },
+    "top_candidates": [
+      {
+        "symbol": "gb_mu",
+        "name": "Micron Technology",
+        "market": "US",
+        "price": 524.56,
+        "change_rate": 0.05604767273312916,
+        "volume": 38114100.0,
+        "score": 68.44,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 2",
+          "volume 38,114,100"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_etsy",
+        "name": "Etsy",
+        "market": "US",
+        "price": 65.195,
+        "change_rate": 0.03830227743271212,
+        "volume": 2292558.0,
+        "score": 49.57,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 5",
+          "volume 2,292,558",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_mdb",
+        "name": "MongoDB",
+        "market": "US",
+        "price": 264.25,
+        "change_rate": 0.04203635790054811,
+        "volume": 981502.0,
+        "score": 44.94,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 3",
+          "volume 981,502",
+          "close near intraday high"
+        ],
+        "penalties": [
+          "low volume 981502"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_intc",
+        "name": "Intel",
+        "market": null,
+        "price": 84.945,
+        "change_rate": 0.0291,
+        "volume": 163587228.0,
+        "score": 43.02,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 163,587,228",
+          "existing holding"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_snap",
+        "name": "Snap",
+        "market": "US",
+        "price": 6.06,
+        "change_rate": 0.07256637168141579,
+        "volume": 0.0,
+        "score": 42.47,
+        "sources": [
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 1"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_nvda",
+        "name": "NVIDIA",
+        "market": "US",
+        "price": 216.505,
+        "change_rate": 0.03954002016613043,
+        "volume": 0.0,
+        "score": 35.78,
+        "sources": [
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 4"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_app",
+        "name": "AppLovin",
+        "market": null,
+        "price": 460.47,
+        "change_rate": 0.0272,
+        "volume": 3030137.0,
+        "score": 30.3,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 3,030,137",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_abt",
+        "name": "Abbott Labs",
+        "market": null,
+        "price": 92.835,
+        "change_rate": 0.0187,
+        "volume": 13122598.0,
+        "score": 29.1,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 13,122,598",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_goog",
+        "name": "Alphabet",
+        "market": null,
+        "price": 348.59,
+        "change_rate": 0.0183,
+        "volume": 13147987.0,
+        "score": 28.4,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 13,147,987",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "gb_ddog",
+        "name": "Datadog",
+        "market": null,
+        "price": 132.71,
+        "change_rate": 0.0249,
+        "volume": 2994086.0,
+        "score": 28.27,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 2,994,086",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 MU (Micron Technology)，分析师: market。\n\n选股理由: positive momentum, top mover rank 2, volume 38,114,100"
+    },
+    {
+      "title": "Error",
+      "content": "TradingAgents timed out after 1200s"
+    }
+  ],
+  "error": "TradingAgents timed out after 1200s",
+  "updated_at": "2026-04-28T08:54:44.979530+00:00"
+}

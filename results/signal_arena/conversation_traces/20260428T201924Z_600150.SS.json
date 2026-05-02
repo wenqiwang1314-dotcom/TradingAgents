@@ -1,0 +1,268 @@
+{
+  "id": "20260428T201924Z_600150.SS",
+  "status": "running",
+  "started_at": "2026-04-28T20:19:24.515780+00:00",
+  "market": "CN",
+  "arena_symbol": "sh600150",
+  "tradingagents_symbol": "600150.SS",
+  "stock_name": "中国船舶",
+  "trade_date": "2026-04-28",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "stock_selection": {
+    "timestamp": "2026-04-28T20:19:24.515412+00:00",
+    "mode": "autonomous",
+    "strategy": "momentum",
+    "market": "CN",
+    "selected": {
+      "symbol": "sh600150",
+      "name": "中国船舶",
+      "market": "CN",
+      "price": 41.19,
+      "change_rate": 0.07237698516011459,
+      "volume": 242665168.0,
+      "score": 65.07,
+      "sources": [
+        "stocks",
+        "top_movers"
+      ],
+      "reasons": [
+        "positive momentum",
+        "top mover rank 4",
+        "volume 242,665,168",
+        "close near intraday high",
+        "existing holding"
+      ],
+      "penalties": [
+        "recently analyzed"
+      ],
+      "disqualified": [],
+      "eligible": true
+    },
+    "meta": {
+      "candidate_limit": 320,
+      "top_movers_count": 5,
+      "stocks_count": 285,
+      "combined_count": 285,
+      "stocks_total": 285,
+      "latest_trade_date": "2026-04-28",
+      "allowed_markets": [
+        "CN"
+      ],
+      "whitelist_size": 13
+    },
+    "top_candidates": [
+      {
+        "symbol": "sh600150",
+        "name": "中国船舶",
+        "market": "CN",
+        "price": 41.19,
+        "change_rate": 0.07237698516011459,
+        "volume": 242665168.0,
+        "score": 65.07,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 4",
+          "volume 242,665,168",
+          "close near intraday high",
+          "existing holding"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh601100",
+        "name": "恒立液压",
+        "market": "CN",
+        "price": 103.91,
+        "change_rate": 0.07190014441922837,
+        "volume": 20938898.0,
+        "score": 51.19,
+        "sources": [
+          "stocks",
+          "top_movers"
+        ],
+        "reasons": [
+          "positive momentum",
+          "top mover rank 5",
+          "volume 20,938,898",
+          "close near intraday high"
+        ],
+        "penalties": [
+          "recently analyzed"
+        ],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz000651",
+        "name": "格力电器",
+        "market": null,
+        "price": 38.44,
+        "change_rate": 0.0248,
+        "volume": 61764565.0,
+        "score": 33.51,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 61,764,565",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz000333",
+        "name": "美的集团",
+        "market": null,
+        "price": 80.49,
+        "change_rate": 0.0125,
+        "volume": 26411538.0,
+        "score": 26.02,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 26,411,538",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz002415",
+        "name": "海康威视",
+        "market": null,
+        "price": 34.5,
+        "change_rate": 0.0156,
+        "volume": 69165952.0,
+        "score": 24.88,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 69,165,952"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600036",
+        "name": "招商银行",
+        "market": null,
+        "price": 39.5,
+        "change_rate": 0.003,
+        "volume": 58322053.0,
+        "score": 20.93,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 58,322,053",
+          "close near intraday high"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600900",
+        "name": "长江电力",
+        "market": null,
+        "price": 26.71,
+        "change_rate": 0.0019,
+        "volume": 60561224.0,
+        "score": 18.78,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 60,561,224"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sz300750",
+        "name": "宁德时代",
+        "market": null,
+        "price": 428.18,
+        "change_rate": -0.0154,
+        "volume": 31192098.0,
+        "score": 17.03,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 31,192,098"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh600309",
+        "name": "万华化学",
+        "market": null,
+        "price": 89.14,
+        "change_rate": 0.0019,
+        "volume": 22471684.0,
+        "score": 16.72,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "positive momentum",
+          "volume 22,471,684"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      },
+      {
+        "symbol": "sh601318",
+        "name": "中国平安",
+        "market": null,
+        "price": 57.53,
+        "change_rate": -0.0003,
+        "volume": 55190341.0,
+        "score": 15.63,
+        "sources": [
+          "stocks"
+        ],
+        "reasons": [
+          "volume 55,190,341"
+        ],
+        "penalties": [],
+        "disqualified": [],
+        "eligible": true
+      }
+    ]
+  },
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 600150.SS (中国船舶)，分析师: market。\n\n选股理由: positive momentum, top mover rank 4, volume 242,665,168, close near intraday high, existing holding"
+    }
+  ],
+  "updated_at": "2026-04-28T20:19:24.515808+00:00"
+}

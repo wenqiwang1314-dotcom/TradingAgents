@@ -4,17 +4,18 @@ from typing import List, Optional
 from pathlib import Path
 import re
 
+from tradingagents.rating import extract_rating
+from tradingagents.llm_clients.base_client import strip_reasoning_traces
+
 
 class TradingMemoryLog:
     """Append-only markdown log of trading decisions and reflections."""
 
-    RATINGS = {"buy", "overweight", "hold", "underweight", "sell"}
     # HTML comment: cannot appear in LLM prose output, safe as a hard delimiter
     _SEPARATOR = "\n\n<!-- ENTRY_END -->\n\n"
     # Precompiled patterns — avoids re-compilation on every load_entries() call
     _DECISION_RE = re.compile(r"DECISION:\n(.*?)(?=\nREFLECTION:|\Z)", re.DOTALL)
     _REFLECTION_RE = re.compile(r"REFLECTION:\n(.*?)$", re.DOTALL)
-    _RATING_LABEL_RE = re.compile(r"rating.*?[:\-][\s*]*(\w+)", re.IGNORECASE)
 
     def __init__(self, config: dict = None):
         self._log_path = None
@@ -40,6 +41,7 @@ class TradingMemoryLog:
             for line in raw.splitlines():
                 if line.startswith(f"[{trade_date} | {ticker} |") and line.endswith("| pending]"):
                     return
+        final_trade_decision = strip_reasoning_traces(final_trade_decision)
         rating = self._parse_rating(final_trade_decision)
         tag = f"[{trade_date} | {ticker} | {rating} | pending]"
         entry = f"{tag}\n\nDECISION:\n{final_trade_decision}{self._SEPARATOR}"
@@ -214,18 +216,7 @@ class TradingMemoryLog:
     # --- Helpers ---
 
     def _parse_rating(self, text: str) -> str:
-        # First pass: explicit "Rating: X" label — search handles markdown bold/numbered lists
-        for line in text.splitlines():
-            m = self._RATING_LABEL_RE.search(line)
-            if m and m.group(1).lower() in self.RATINGS:
-                return m.group(1).capitalize()
-        # Fallback: first rating word found anywhere in the text
-        for line in text.splitlines():
-            for word in line.lower().split():
-                clean = word.strip("*:.,")
-                if clean in self.RATINGS:
-                    return clean.capitalize()
-        return "Hold"
+        return extract_rating(text) or "Hold"
 
     def _parse_entry(self, raw: str) -> Optional[dict]:
         lines = raw.strip().splitlines()

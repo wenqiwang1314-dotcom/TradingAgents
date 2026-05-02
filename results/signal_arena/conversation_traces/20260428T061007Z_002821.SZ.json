@@ -1,0 +1,26 @@
+{
+  "id": "20260428T061007Z_002821.SZ",
+  "status": "failed",
+  "started_at": "2026-04-28T06:10:07.715539+00:00",
+  "market": "CN",
+  "arena_symbol": "sz002821",
+  "tradingagents_symbol": "002821.SZ",
+  "stock_name": "凯莱英",
+  "trade_date": "2026-04-28",
+  "analysts": [
+    "market"
+  ],
+  "execute_trade": true,
+  "sections": [
+    {
+      "title": "Run",
+      "content": "TradingAgents 正在分析 002821.SZ (凯莱英)，分析师: market。"
+    },
+    {
+      "title": "Error",
+      "content": "TradingAgents timed out after 1200s"
+    }
+  ],
+  "error": "TradingAgents timed out after 1200s",
+  "updated_at": "2026-04-28T06:30:08.633427+00:00"
+}
