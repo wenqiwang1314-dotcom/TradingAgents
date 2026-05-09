@@ -25,7 +25,7 @@
 
 ---
 
-# TradingAgents: Multi-Agents LLM Financial Trading Framework
+# TradingAgents: My DGX Spark / Nemotron Trading Research Fork
 
 ## News
 - [2026-03] **TradingAgents v0.2.3** released with multi-language support, GPT-5.4 family models, unified model catalog, backtesting date fidelity, and proxy support.
@@ -62,6 +62,177 @@ TradingAgents is a multi-agent trading framework that mirrors the dynamics of re
 </p>
 
 > TradingAgents framework is designed for research purposes. Trading performance may vary based on many factors, including the chosen backbone language models, model temperature, trading periods, the quality of data, and other non-deterministic factors. [It is not intended as financial, investment, or trading advice.](https://tauric.ai/disclaimer/)
+
+## My Fork: DGX Spark, Nemotron, and Auditable TradingAgents
+
+This repository is my personal research fork of `TauricResearch/TradingAgents`.
+The original principle is preserved: a simulated trading firm is decomposed into
+specialized analyst agents, bull and bear researchers, a trader, risk debaters,
+and a final portfolio manager. My changes focus on making that workflow useful
+as a local, auditable trading-research lab rather than a one-off text demo.
+
+The core design still follows this flow:
+
+```text
+Market / Social / News / Fundamentals Analysts
+        -> Bull and Bear Research Debate
+        -> Research Manager
+        -> Trader
+        -> Aggressive / Conservative / Neutral Risk Debate
+        -> Portfolio Manager
+        -> final_trade_rating + final_trade_action
+```
+
+### What I Changed on Top of the Original Framework
+
+- Added a local inference path for my DGX Spark setup through a vLLM
+  OpenAI-compatible endpoint.
+- Uses `nvidia/nemotron-3-super` as the local deep and quick reasoning model
+  for TradingAgents runs that do not need a hosted provider.
+- Extended the OpenAI-compatible client path so custom `backend_url` values
+  such as `http://localhost:5000/v1` work cleanly with vLLM.
+- Added stronger evidence discipline across the agent chain, so missing data is
+  treated as missing evidence instead of being silently filled in by model
+  priors.
+- Added Signal Arena automation for market scanning, pre-open selection,
+  optional order submission, daily close handling, and local monitoring.
+- Added a provenance-focused web dashboard that records when agents chose
+  `buy`, `hold`, or `sell`, how many shares were involved, what reference or
+  execution price was used, and which trace/log produced the decision.
+- Added persistent decision memory and checkpoint resume support so later runs
+  can learn from prior decisions and interrupted LangGraph runs can continue
+  safely.
+
+### Local DGX Spark / vLLM / Nemotron Setup
+
+My local model stack is:
+
+```text
+Hardware:   DGX Spark
+Serving:    vLLM
+Endpoint:   http://localhost:5000/v1
+Model:      nvidia/nemotron-3-super
+Protocol:   OpenAI-compatible Chat Completions
+```
+
+Typical environment variables for the Signal Arena runner:
+
+```bash
+export TRADINGAGENTS_BACKEND_URL="http://localhost:5000/v1"
+export TRADINGAGENTS_DEEP_MODEL="nvidia/nemotron-3-super"
+export TRADINGAGENTS_QUICK_MODEL="nvidia/nemotron-3-super"
+```
+
+Equivalent direct Python configuration:
+
+```python
+from tradingagents.default_config import DEFAULT_CONFIG
+
+config = DEFAULT_CONFIG.copy()
+config.update({
+    "llm_provider": "openai",
+    "backend_url": "http://localhost:5000/v1",
+    "deep_think_llm": "nvidia/nemotron-3-super",
+    "quick_think_llm": "nvidia/nemotron-3-super",
+    "max_debate_rounds": 1,
+    "max_risk_discuss_rounds": 1,
+    "max_recur_limit": 60,
+    "max_analyst_tool_iterations": 4,
+    "output_language": "English",
+})
+```
+
+### Prompt and Agent Behavior Changes
+
+The most important local changes are prompt-level guardrails and convergence
+rules. Historical logs showed that when a report was empty, later agents could
+still talk as if social sentiment, macro news, insider activity, or fundamental
+metrics had been verified. This fork makes that failure mode visible.
+
+The local prompt changes ask agents to:
+
+- use only supplied analyst reports and verified tool outputs;
+- mark empty reports as `NO VERIFIED REPORT AVAILABLE`;
+- avoid inventing social, news, macro, insider, or financial facts;
+- convert missing evidence into smaller sizing, stronger stops, or more
+  conservative ratings;
+- finish with structured fields such as `final_trade_rating` and
+  `final_trade_action`;
+- keep internal drafts and planning text out of final user-facing reports.
+
+Additional convergence logic was added so analysts are pushed to produce a
+final report after the tool budget is exhausted or enough evidence has already
+been gathered. The goal is not to make every output bullish or conservative; it
+is to make every output traceable to the evidence that was actually available.
+
+### Signal Arena Automation
+
+This fork includes a local automation layer under `scripts/`:
+
+```bash
+uv run python scripts/signal_arena_agent.py --mode health --market US
+uv run python scripts/signal_arena_agent.py --mode agent --market US
+uv run python scripts/signal_arena_agent.py --mode agent --market US --execute-trade
+```
+
+The automation can:
+
+- inspect Signal Arena account, portfolio, holdings, leaderboard, and market
+  status;
+- collect top movers and market stock lists;
+- prioritize existing holdings or high-scoring candidates;
+- run TradingAgents on the selected stock;
+- map the portfolio manager output into `buy`, `hold`, or `sell`;
+- compute share size from cash, current holdings, and market rules;
+- run in dry-run mode by default, with live order submission only when
+  explicitly enabled.
+
+### Decision Provenance Dashboard
+
+The local dashboard is designed for post-trade review, not just monitoring.
+On my private Tailscale network I run it at:
+
+```text
+http://100.123.254.50:8787/
+```
+
+Start it with:
+
+```bash
+bash scripts/run_signal_arena_dashboard.sh
+```
+
+The dashboard shows:
+
+- account value, cash, holdings, rank, and market status;
+- portfolio history and return curve;
+- current and historical model conversations;
+- GPT pre-open selections and candidate scoring;
+- TradingAgents analysis logs;
+- a decision provenance view for every recorded `buy`, `hold`, and `sell`.
+
+The provenance view combines local `runs.jsonl`, daily automation logs,
+Signal Arena trade records, full-state analysis logs, and conversation trace
+IDs. For each decision it can show the stock, time selected, time decided,
+shares, reference or execution price, reason, evidence snippets, order status,
+and a chart comparing the decision point against later observed prices. This is
+the main tool I use to judge whether the agents chose reasonable trading
+timing.
+
+### How I Use This Fork
+
+- If only the `market` analyst is enabled, I treat the result as a technical
+  analysis signal only.
+- For stronger evidence, I prefer `market,social,news,fundamentals` and then
+  inspect whether each report actually has content.
+- If key evidence is missing, I expect the portfolio manager to reduce size,
+  widen confirmation requirements, or prefer `Hold` / `Underweight`.
+- I review `final_trade_rating`, `final_trade_action`, realised return, alpha,
+  drawdown, and the provenance chart instead of trusting a single narrative
+  answer.
+
+This project is still for research and competition-style experimentation. It is
+not financial, investment, or trading advice.
 
 Our framework decomposes complex trading tasks into specialized roles. This ensures the system achieves a robust, scalable approach to market analysis and decision-making.
 
@@ -101,9 +272,9 @@ Our framework decomposes complex trading tasks into specialized roles. This ensu
 
 ### Installation
 
-Clone TradingAgents:
+Clone this fork:
 ```bash
-git clone https://github.com/TauricResearch/TradingAgents.git
+git clone https://github.com/wenqiwang1314-dotcom/TradingAgents.git
 cd TradingAgents
 ```
 
