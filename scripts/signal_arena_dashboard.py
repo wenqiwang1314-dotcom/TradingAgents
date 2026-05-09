@@ -18,6 +18,7 @@ import sys
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -34,16 +35,19 @@ from scripts.signal_arena_agent import (  # noqa: E402
     BASE_URL,
     SignalArenaClient,
     action_from_signal,
+    arena_to_tradingagents_symbol,
     load_dotenv,
 )
 
 RESULTS_DIR = PROJECT_ROOT / "results"
 SIGNAL_DIR = RESULTS_DIR / "signal_arena"
 RUNS_PATH = SIGNAL_DIR / "runs.jsonl"
+DAILY_RUNS_PATH = SIGNAL_DIR / "daily_runs.jsonl"
 LAST_RUN_PATH = SIGNAL_DIR / "last_run.json"
 CRON_LOG_PATH = SIGNAL_DIR / "cron.log"
 LOOP_LOG_PATH = SIGNAL_DIR / "loop.log"
 PORTFOLIO_HISTORY_PATH = SIGNAL_DIR / "portfolio_history.jsonl"
+PORTFOLIO_CACHE_PATH = SIGNAL_DIR / "portfolio_cache.json"
 CONVERSATION_DIR = SIGNAL_DIR / "conversation_traces"
 CURRENT_CONVERSATION_PATH = SIGNAL_DIR / "current_conversation.json"
 LAST_SELECTION_PATH = SIGNAL_DIR / "stock_selection.json"
@@ -64,6 +68,10 @@ def tail_text(path: Path, max_lines: int = 120) -> str:
     except OSError as exc:
         return f"Unable to read {path}: {exc}"
     return "\n".join(lines[-max_lines:])
+
+
+def text_section(title: str, content: Any) -> dict[str, str]:
+    return {"title": title, "content": str(content or "")}
 
 
 def read_json(path: Path) -> Any:
@@ -87,6 +95,57 @@ def read_jsonl_tail(path: Path, limit: int = 30) -> list[dict[str, Any]]:
     return rows[-limit:]
 
 
+def compact_text(value: Any, limit: int = 520) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1].rstrip() + "…"
+
+
+def as_float(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number == number else None
+
+
+def as_int(value: Any) -> int | None:
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def first_value(*values: Any) -> Any:
+    for value in values:
+        if value is not None and value != "":
+            return value
+    return None
+
+
+def first_number(*values: Any) -> float | None:
+    for value in values:
+        number = as_float(value)
+        if number is not None:
+            return number
+    return None
+
+
+def normalized_symbol(symbol: Any) -> str:
+    text = str(symbol or "").strip()
+    if not text:
+        return ""
+    return arena_to_tradingagents_symbol(text)
+
+
+def normalized_action(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if text in {"buy", "sell", "hold"}:
+        return text
+    return action_from_signal(str(value or "")) or "hold"
+
+
 def unwrap_api_data(result: dict[str, Any]) -> dict[str, Any]:
     data = result.get("data") if isinstance(result, dict) else None
     if isinstance(data, dict) and isinstance(data.get("data"), dict):
@@ -96,6 +155,49 @@ def unwrap_api_data(result: dict[str, Any]) -> dict[str, Any]:
 
 def read_portfolio_history(limit: int = 500) -> list[dict[str, Any]]:
     return read_jsonl_tail(PORTFOLIO_HISTORY_PATH, limit)
+
+
+def cache_portfolio_result(result: dict[str, Any]) -> None:
+    payload = unwrap_api_data(result)
+    holdings = payload.get("holdings") if isinstance(payload, dict) else None
+    portfolio = payload.get("portfolio") if isinstance(payload, dict) else None
+    if not isinstance(portfolio, dict) or not isinstance(holdings, list):
+        return
+    SIGNAL_DIR.mkdir(parents=True, exist_ok=True)
+    PORTFOLIO_CACHE_PATH.write_text(
+        json.dumps(
+            {
+                "cached_at": now_iso(),
+                "result": result,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def read_cached_portfolio_result(max_age_hours: int = 36) -> dict[str, Any] | None:
+    cached = read_json(PORTFOLIO_CACHE_PATH)
+    if not isinstance(cached, dict):
+        return None
+    cached_at = cached.get("cached_at")
+    result = cached.get("result")
+    if not isinstance(result, dict):
+        return None
+    try:
+        cached_dt = datetime.fromisoformat(str(cached_at).replace("Z", "+00:00"))
+        age_hours = (datetime.now(timezone.utc) - cached_dt.astimezone(timezone.utc)).total_seconds() / 3600
+    except Exception:
+        return None
+    if age_hours > max_age_hours:
+        return None
+    return {
+        **result,
+        "from_cache": True,
+        "cached_at": cached_at,
+        "cache_age_hours": round(age_hours, 2),
+    }
 
 
 def record_portfolio_history(home_result: dict[str, Any], portfolio_result: dict[str, Any]) -> list[dict[str, Any]]:
@@ -204,6 +306,9 @@ def safe_env() -> dict[str, Any]:
         "SIGNAL_ARENA_MODE",
         "SIGNAL_ARENA_MARKET",
         "SIGNAL_ARENA_EXECUTE_TRADE",
+        "SIGNAL_ARENA_USE_GPT_PREOPEN",
+        "SIGNAL_ARENA_GPT_PREOPEN_MAX_AGE_HOURS",
+        "SIGNAL_ARENA_GPT_PREOPEN_RECENT_HOURS",
         "TRADINGAGENTS_ANALYSTS",
         "TRADINGAGENTS_AGENT_TIMEOUT_SECONDS",
         "TRADINGAGENTS_BACKEND_URL",
@@ -212,6 +317,13 @@ def safe_env() -> dict[str, Any]:
         "SIGNAL_DASHBOARD_HOST",
         "SIGNAL_DASHBOARD_PORT",
         "SIGNAL_DASHBOARD_ALLOW_TRADES",
+        "SIGNAL_DASHBOARD_ARENA_TIMEOUT",
+        "SIGNAL_DASHBOARD_HOME_TIMEOUT",
+        "SIGNAL_DASHBOARD_PORTFOLIO_TIMEOUT",
+        "SIGNAL_DASHBOARD_PORTFOLIO_CACHE_MAX_AGE_HOURS",
+        "SIGNAL_DASHBOARD_SNAPSHOTS_TIMEOUT",
+        "SIGNAL_DASHBOARD_TRADES_TIMEOUT",
+        "SIGNAL_DASHBOARD_LEADERBOARD_TIMEOUT",
     ]
     return {
         "api_key_configured": bool(os.getenv(API_KEY_ENV)),
@@ -220,15 +332,24 @@ def safe_env() -> dict[str, Any]:
     }
 
 
-def client() -> SignalArenaClient:
-    return SignalArenaClient(BASE_URL, os.getenv(API_KEY_ENV), timeout=10)
+def env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
+def client(timeout: int | None = None) -> SignalArenaClient:
+    default_timeout = env_int("SIGNAL_DASHBOARD_ARENA_TIMEOUT", 10)
+    return SignalArenaClient(BASE_URL, os.getenv(API_KEY_ENV), timeout=timeout or default_timeout)
 
 
 def try_call(name: str, func: Any) -> dict[str, Any]:
+    started = time.monotonic()
     try:
-        return {"ok": True, "data": func()}
+        return {"ok": True, "data": func(), "elapsed_sec": round(time.monotonic() - started, 3)}
     except Exception as exc:
-        return {"ok": False, "error": str(exc)}
+        return {"ok": False, "error": str(exc), "elapsed_sec": round(time.monotonic() - started, 3)}
 
 
 def summarize_run(run: dict[str, Any]) -> dict[str, Any]:
@@ -269,6 +390,63 @@ def summarize_run(run: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def summarize_preopen_pick(pick: dict[str, Any]) -> dict[str, Any]:
+    scorecard = pick.get("scorecard") if isinstance(pick.get("scorecard"), dict) else {}
+    selector_pick = pick.get("selector_pick") if isinstance(pick.get("selector_pick"), dict) else {}
+    evidence = selector_pick.get("evidence") if isinstance(selector_pick.get("evidence"), list) else []
+    return {
+        "symbol": scorecard.get("symbol") or selector_pick.get("symbol") or pick.get("symbol"),
+        "name": scorecard.get("name"),
+        "score": scorecard.get("score"),
+        "change_rate": scorecard.get("change_rate"),
+        "volume": scorecard.get("volume"),
+        "reason": selector_pick.get("reason"),
+        "confidence": selector_pick.get("confidence"),
+        "risk": selector_pick.get("risk"),
+        "evidence": evidence[:3],
+        "sources": (selector_pick.get("sources") or [])[:4],
+    }
+
+
+def latest_preopen_selections() -> dict[str, Any]:
+    markets: dict[str, Any] = {}
+    latest_timestamp = ""
+    for row in reversed(read_jsonl_tail(DAILY_RUNS_PATH, 200)):
+        if row.get("mode") != "preopen":
+            continue
+        selected = row.get("selected") if isinstance(row.get("selected"), dict) else {}
+        selector = row.get("selector") if isinstance(row.get("selector"), dict) else {}
+        selector_summary = {
+            key: selector.get(key)
+            for key in ("provider", "model", "web_search", "search_context_size", "max_search_calls")
+            if key in selector
+        }
+        for market, picks in selected.items():
+            if market in markets or not isinstance(picks, list):
+                continue
+            markets[market] = {
+                "timestamp": row.get("timestamp"),
+                "selector": selector_summary,
+                "picks": [summarize_preopen_pick(pick) for pick in picks if isinstance(pick, dict)],
+                "analyses": [
+                    {
+                        "symbol": item.get("tradingagents_symbol"),
+                        "rating": item.get("final_trade_rating"),
+                        "action": item.get("final_trade_action"),
+                        "shares": item.get("shares"),
+                        "execute_trade": item.get("execute_trade"),
+                    }
+                    for item in (row.get("analyses") or [])
+                    if isinstance(item, dict) and item.get("market") == market
+                ],
+            }
+            if str(row.get("timestamp") or "") > latest_timestamp:
+                latest_timestamp = str(row.get("timestamp") or "")
+        if {"CN", "US", "HK"}.issubset(set(markets)):
+            break
+    return {"timestamp": latest_timestamp, "markets": markets}
+
+
 def latest_agent_run() -> dict[str, Any] | None:
     latest = read_json(LAST_RUN_PATH)
     if isinstance(latest, dict) and latest.get("mode") == "agent":
@@ -302,6 +480,443 @@ def list_analysis_logs(limit: int = 80) -> list[dict[str, Any]]:
         )
     logs.sort(key=lambda item: item["mtime"], reverse=True)
     return logs[:limit]
+
+
+def trade_data_from_payload(trade: Any) -> dict[str, Any]:
+    if not isinstance(trade, dict):
+        return {}
+    data = unwrap_api_data(trade)
+    if data:
+        return data
+    return trade
+
+
+def trade_status_from_payload(trade: Any, execute_trade: Any = None) -> tuple[str, str]:
+    if isinstance(trade, dict):
+        if trade.get("skipped"):
+            return "skipped", str(trade.get("reason") or "")
+        data = trade_data_from_payload(trade)
+        status = first_value(data.get("status"), trade.get("status"))
+        message = first_value(data.get("message"), trade.get("message"), data.get("reason"), trade.get("reason"))
+        if status:
+            return str(status), str(message or "")
+        if trade.get("ok") is False or trade.get("success") is False:
+            return "failed", str(first_value(trade.get("error"), trade.get("message"), data.get("message")) or "")
+        if data:
+            return "submitted", str(message or "")
+    if execute_trade:
+        return "pending", ""
+    return "dry-run", ""
+
+
+def source_record_id(*parts: Any) -> str:
+    raw = "|".join(str(part or "") for part in parts)
+    return uuid.uuid5(uuid.NAMESPACE_URL, raw).hex[:16]
+
+
+def decision_record(
+    *,
+    source: str,
+    source_label: str,
+    symbol: Any,
+    arena_symbol: Any = None,
+    name: Any = None,
+    market: Any = None,
+    action: Any = None,
+    selected_at: Any = None,
+    decided_at: Any = None,
+    trade_date: Any = None,
+    shares: Any = None,
+    price: Any = None,
+    price_kind: str = "参考价",
+    currency: Any = None,
+    status: str = "",
+    status_detail: str = "",
+    score: Any = None,
+    change_rate: Any = None,
+    volume: Any = None,
+    confidence: Any = None,
+    reason: Any = None,
+    risk: Any = None,
+    evidence: Any = None,
+    signal_preview: Any = None,
+    trace_id: Any = None,
+    trade_id: Any = None,
+    source_path: Any = None,
+    execute_trade: Any = None,
+) -> dict[str, Any]:
+    display_symbol = normalized_symbol(symbol or arena_symbol)
+    raw_symbol = str(arena_symbol or symbol or "").strip()
+    normalized = normalized_action(action)
+    numeric_price = as_float(price)
+    numeric_shares = as_int(shares)
+    timestamp = first_value(selected_at, decided_at, trade_date)
+    return {
+        "id": source_record_id(source, display_symbol, raw_symbol, normalized, timestamp, numeric_shares, numeric_price, trade_id, trace_id),
+        "source": source,
+        "source_label": source_label,
+        "symbol": display_symbol,
+        "arena_symbol": raw_symbol,
+        "name": str(name or ""),
+        "market": str(market or ""),
+        "action": normalized,
+        "selected_at": str(selected_at or ""),
+        "decided_at": str(decided_at or ""),
+        "trade_date": str(trade_date or ""),
+        "shares": numeric_shares,
+        "price": numeric_price,
+        "price_kind": price_kind,
+        "currency": str(currency or ""),
+        "status": status,
+        "status_detail": compact_text(status_detail, 240),
+        "score": as_float(score),
+        "change_rate": as_float(change_rate),
+        "volume": as_float(volume),
+        "confidence": as_float(confidence),
+        "reason": compact_text(reason, 620),
+        "risk": compact_text(risk, 420),
+        "evidence": [compact_text(item, 220) for item in evidence[:4]] if isinstance(evidence, list) else [],
+        "signal_preview": compact_text(signal_preview, 900),
+        "trace_id": str(trace_id or ""),
+        "trade_id": str(trade_id or ""),
+        "source_path": str(source_path or ""),
+        "execute_trade": bool(execute_trade),
+    }
+
+
+def joined_reasons(*items: Any) -> str:
+    values: list[str] = []
+    for item in items:
+        if isinstance(item, list):
+            values.extend(str(value) for value in item if value)
+        elif item:
+            values.append(str(item))
+    return " · ".join(dict.fromkeys(values))
+
+
+def decision_records_from_runs(limit: int = 180) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for run in read_jsonl_tail(RUNS_PATH, limit):
+        if run.get("mode") != "agent":
+            continue
+        stock = run.get("stock") if isinstance(run.get("stock"), dict) else {}
+        selection = run.get("stock_selection") if isinstance(run.get("stock_selection"), dict) else {}
+        selected = selection.get("selected") if isinstance(selection.get("selected"), dict) else {}
+        trade = run.get("trade") if isinstance(run.get("trade"), dict) else {}
+        trade_data = trade_data_from_payload(trade)
+        status, status_detail = trade_status_from_payload(trade, run.get("execute_trade"))
+        price = first_number(
+            trade_data.get("executed_price"),
+            trade_data.get("filled_price"),
+            trade_data.get("avg_price"),
+            trade_data.get("price"),
+            trade_data.get("estimated_price"),
+            selected.get("price"),
+            stock.get("price"),
+        )
+        price_kind = "成交价" if first_number(trade_data.get("executed_price"), trade_data.get("filled_price"), trade_data.get("avg_price")) is not None else "决策参考价"
+        records.append(
+            decision_record(
+                source="agent_run",
+                source_label="TradingAgents 深度分析",
+                symbol=run.get("tradingagents_symbol") or stock.get("symbol") or selected.get("symbol"),
+                arena_symbol=stock.get("symbol") or selected.get("symbol"),
+                name=stock.get("name") or selected.get("name"),
+                market=run.get("market") or selected.get("market"),
+                action=run.get("action") or run.get("final_trade_action") or f"{run.get('signal', '')}\n{run.get('final_trade_decision', '')}",
+                selected_at=selection.get("timestamp") or run.get("timestamp"),
+                decided_at=run.get("timestamp"),
+                trade_date=run.get("trade_date") or stock.get("trade_date"),
+                shares=first_value(run.get("shares"), trade_data.get("shares")),
+                price=price,
+                price_kind=price_kind,
+                currency=trade_data.get("currency"),
+                status=status,
+                status_detail=status_detail,
+                score=selected.get("score"),
+                change_rate=first_value(selected.get("change_rate"), stock.get("change_rate")),
+                volume=first_value(selected.get("volume"), stock.get("volume")),
+                reason=joined_reasons(selected.get("reasons"), selected.get("penalties")),
+                signal_preview=run.get("final_trade_decision") or run.get("signal"),
+                trace_id=run.get("conversation_trace_id"),
+                trade_id=trade_data.get("trade_id"),
+                source_path=str(RUNS_PATH.relative_to(PROJECT_ROOT)),
+                execute_trade=run.get("execute_trade"),
+            )
+        )
+    return records
+
+
+def decision_records_from_daily_runs(limit: int = 180) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for row in read_jsonl_tail(DAILY_RUNS_PATH, limit):
+        mode = row.get("mode")
+        row_timestamp = row.get("timestamp")
+        for order in row.get("entry_orders") or []:
+            if not isinstance(order, dict):
+                continue
+            scorecard = order.get("scorecard") if isinstance(order.get("scorecard"), dict) else {}
+            selector_pick = order.get("selector_pick") if isinstance(order.get("selector_pick"), dict) else {}
+            trade = order.get("trade") if isinstance(order.get("trade"), dict) else {}
+            trade_data = trade_data_from_payload(trade)
+            status, status_detail = trade_status_from_payload(trade, order.get("execute_trade"))
+            price = first_number(
+                trade_data.get("executed_price"),
+                trade_data.get("filled_price"),
+                trade_data.get("avg_price"),
+                trade_data.get("price"),
+                trade_data.get("estimated_price"),
+                scorecard.get("price"),
+            )
+            records.append(
+                decision_record(
+                    source="preopen_order",
+                    source_label="GPT 盘前选股/下单",
+                    symbol=order.get("symbol") or scorecard.get("symbol"),
+                    arena_symbol=order.get("symbol") or scorecard.get("symbol"),
+                    name=order.get("name") or scorecard.get("name"),
+                    market=order.get("market") or scorecard.get("market") or (row.get("markets") or [""])[0],
+                    action=order.get("action"),
+                    selected_at=row_timestamp,
+                    decided_at=first_value(trade_data.get("created_at"), trade_data.get("submitted_at"), row_timestamp),
+                    trade_date=scorecard.get("trade_date"),
+                    shares=first_value(order.get("shares"), trade_data.get("shares")),
+                    price=price,
+                    price_kind="成交价" if first_number(trade_data.get("executed_price"), trade_data.get("filled_price"), trade_data.get("avg_price")) is not None else "下单参考价",
+                    currency=trade_data.get("currency"),
+                    status=status,
+                    status_detail=status_detail,
+                    score=scorecard.get("score"),
+                    change_rate=scorecard.get("change_rate"),
+                    volume=scorecard.get("volume"),
+                    confidence=selector_pick.get("confidence"),
+                    reason=selector_pick.get("reason") or joined_reasons(scorecard.get("reasons"), scorecard.get("penalties")),
+                    risk=selector_pick.get("risk"),
+                    evidence=selector_pick.get("evidence") if isinstance(selector_pick.get("evidence"), list) else [],
+                    signal_preview=selector_pick.get("reason"),
+                    trade_id=trade_data.get("trade_id"),
+                    source_path=str(DAILY_RUNS_PATH.relative_to(PROJECT_ROOT)),
+                    execute_trade=order.get("execute_trade"),
+                )
+            )
+        for analysis in row.get("analyses") or []:
+            if not isinstance(analysis, dict):
+                continue
+            stock = analysis.get("stock") if isinstance(analysis.get("stock"), dict) else {}
+            scorecard = analysis.get("scorecard") if isinstance(analysis.get("scorecard"), dict) else {}
+            selector_pick = analysis.get("selector_pick") if isinstance(analysis.get("selector_pick"), dict) else {}
+            trade = analysis.get("trade") if isinstance(analysis.get("trade"), dict) else {}
+            trade_data = trade_data_from_payload(trade)
+            status, status_detail = trade_status_from_payload(trade, analysis.get("execute_trade"))
+            records.append(
+                decision_record(
+                    source="daily_agent_analysis",
+                    source_label="Daily TradingAgents 分析",
+                    symbol=analysis.get("tradingagents_symbol") or stock.get("symbol") or scorecard.get("symbol"),
+                    arena_symbol=stock.get("symbol") or scorecard.get("symbol"),
+                    name=stock.get("name") or scorecard.get("name"),
+                    market=analysis.get("market") or row.get("markets"),
+                    action=analysis.get("final_trade_action") or f"{analysis.get('final_trade_rating', '')}\n{analysis.get('final_trade_decision', '')}",
+                    selected_at=row_timestamp,
+                    decided_at=first_value(analysis.get("timestamp"), row_timestamp),
+                    trade_date=analysis.get("trade_date") or stock.get("trade_date"),
+                    shares=first_value(analysis.get("shares"), trade_data.get("shares")),
+                    price=first_number(trade_data.get("executed_price"), trade_data.get("estimated_price"), stock.get("price"), scorecard.get("price")),
+                    price_kind="决策参考价",
+                    currency=trade_data.get("currency"),
+                    status=status,
+                    status_detail=status_detail,
+                    score=scorecard.get("score"),
+                    change_rate=first_value(stock.get("change_rate"), scorecard.get("change_rate")),
+                    volume=first_value(stock.get("volume"), scorecard.get("volume")),
+                    confidence=selector_pick.get("confidence"),
+                    reason=selector_pick.get("reason") or joined_reasons(scorecard.get("reasons"), scorecard.get("penalties")),
+                    risk=selector_pick.get("risk"),
+                    evidence=selector_pick.get("evidence") if isinstance(selector_pick.get("evidence"), list) else [],
+                    signal_preview=analysis.get("final_trade_decision") or analysis.get("signal"),
+                    trace_id=analysis.get("conversation_trace_id"),
+                    trade_id=trade_data.get("trade_id"),
+                    source_path=str(DAILY_RUNS_PATH.relative_to(PROJECT_ROOT)),
+                    execute_trade=analysis.get("execute_trade"),
+                )
+            )
+        for close_row in row.get("closed") or []:
+            if not isinstance(close_row, dict):
+                continue
+            trade = close_row.get("trade") if isinstance(close_row.get("trade"), dict) else {}
+            trade_data = trade_data_from_payload(trade)
+            status, status_detail = trade_status_from_payload(trade, close_row.get("execute_trade"))
+            records.append(
+                decision_record(
+                    source="close_out",
+                    source_label="收盘平仓计划",
+                    symbol=close_row.get("symbol"),
+                    arena_symbol=close_row.get("symbol"),
+                    market=close_row.get("market") or (row.get("markets") or [""])[0],
+                    action="sell",
+                    selected_at=row_timestamp,
+                    decided_at=first_value(trade_data.get("created_at"), row_timestamp),
+                    shares=first_value(close_row.get("shares"), trade_data.get("shares")),
+                    price=first_number(trade_data.get("executed_price"), trade_data.get("estimated_price"), trade_data.get("price")),
+                    price_kind="成交价" if first_number(trade_data.get("executed_price"), trade_data.get("filled_price"), trade_data.get("avg_price")) is not None else "平仓参考价",
+                    currency=trade_data.get("currency"),
+                    status=status,
+                    status_detail=status_detail,
+                    reason="Daily end-of-session close-out",
+                    trade_id=trade_data.get("trade_id"),
+                    source_path=str(DAILY_RUNS_PATH.relative_to(PROJECT_ROOT)),
+                    execute_trade=close_row.get("execute_trade"),
+                )
+            )
+    return records
+
+
+def extract_trade_rows_from_api(result: Any) -> list[dict[str, Any]]:
+    if not isinstance(result, dict):
+        return []
+    payload = unwrap_api_data(result)
+    candidates: list[Any] = []
+    if isinstance(payload, list):
+        candidates = payload
+    elif isinstance(payload, dict):
+        for key in ("trades", "orders", "records", "rows", "items"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                candidates = value
+                break
+    return [row for row in candidates if isinstance(row, dict)]
+
+
+def decision_records_from_arena_trades(result: Any) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for trade in extract_trade_rows_from_api(result):
+        status, status_detail = trade_status_from_payload(trade, True)
+        price = first_number(
+            trade.get("executed_price"),
+            trade.get("filled_price"),
+            trade.get("avg_price"),
+            trade.get("price"),
+            trade.get("estimated_price"),
+            trade.get("reference_price"),
+        )
+        records.append(
+            decision_record(
+                source="arena_trade",
+                source_label="Signal Arena 成交/订单",
+                symbol=trade.get("symbol"),
+                arena_symbol=trade.get("symbol"),
+                name=trade.get("name"),
+                market=trade.get("market"),
+                action=trade.get("action"),
+                selected_at=first_value(trade.get("created_at"), trade.get("submitted_at"), trade.get("timestamp")),
+                decided_at=first_value(trade.get("executed_at"), trade.get("settled_at"), trade.get("updated_at"), trade.get("created_at"), trade.get("timestamp")),
+                trade_date=trade.get("trade_date"),
+                shares=first_value(trade.get("shares"), trade.get("quantity")),
+                price=price,
+                price_kind="成交价" if first_number(trade.get("executed_price"), trade.get("filled_price"), trade.get("avg_price")) is not None else "订单参考价",
+                currency=trade.get("currency"),
+                status=status,
+                status_detail=status_detail,
+                reason=first_value(trade.get("reason"), trade.get("message")),
+                trade_id=trade.get("trade_id") or trade.get("id"),
+                source_path="GET /api/v1/arena/trades",
+                execute_trade=True,
+            )
+        )
+    return records
+
+
+def decision_records_from_analysis_logs(existing_keys: set[tuple[str, str, str]]) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for log in list_analysis_logs(160):
+        action = normalized_action(log.get("action"))
+        key = (normalized_symbol(log.get("symbol")), str(log.get("trade_date") or ""), action)
+        if key in existing_keys and action != "hold":
+            continue
+        records.append(
+            decision_record(
+                source="analysis_log",
+                source_label="Full State Log",
+                symbol=log.get("symbol"),
+                action=action,
+                selected_at=log.get("trade_date") or log.get("mtime_iso"),
+                decided_at=log.get("mtime_iso"),
+                trade_date=log.get("trade_date"),
+                shares=0 if action == "hold" else None,
+                status="analysis-only",
+                reason="历史 full_states_log 决策记录",
+                signal_preview=log.get("final_preview"),
+                source_path=log.get("path"),
+            )
+        )
+    return records
+
+
+def build_decision_timeline(arena_trades_result: Any = None) -> dict[str, Any]:
+    records = decision_records_from_runs()
+    records.extend(decision_records_from_daily_runs())
+    records.extend(decision_records_from_arena_trades(arena_trades_result))
+    existing_keys = {
+        (record.get("symbol") or "", record.get("trade_date") or "", record.get("action") or "")
+        for record in records
+    }
+    records.extend(decision_records_from_analysis_logs(existing_keys))
+
+    deduped: dict[str, dict[str, Any]] = {}
+    for record in records:
+        if not record.get("symbol"):
+            continue
+        trade_id = record.get("trade_id")
+        if trade_id:
+            key = f"trade:{trade_id}"
+        else:
+            key = "|".join(
+                str(record.get(name) or "")
+                for name in ("source", "symbol", "action", "selected_at", "decided_at", "shares", "price", "trace_id")
+            )
+        if key not in deduped:
+            deduped[key] = record
+
+    sorted_records = sorted(
+        deduped.values(),
+        key=lambda row: first_value(row.get("selected_at"), row.get("decided_at"), row.get("trade_date")) or "",
+    )[-600:]
+    symbols: dict[str, dict[str, Any]] = {}
+    for record in sorted_records:
+        symbol = record.get("symbol") or ""
+        item = symbols.setdefault(
+            symbol,
+            {
+                "symbol": symbol,
+                "name": record.get("name") or "",
+                "market": record.get("market") or "",
+                "count": 0,
+                "priced_count": 0,
+                "latest_at": "",
+                "latest_price": None,
+                "actions": {"buy": 0, "sell": 0, "hold": 0},
+            },
+        )
+        item["count"] += 1
+        action = record.get("action")
+        if action in item["actions"]:
+            item["actions"][action] += 1
+        if record.get("price") is not None:
+            item["priced_count"] += 1
+            item["latest_price"] = record.get("price")
+        latest_at = first_value(record.get("selected_at"), record.get("decided_at"), record.get("trade_date")) or ""
+        if latest_at and str(latest_at) >= str(item["latest_at"]):
+            item["latest_at"] = str(latest_at)
+            if record.get("name"):
+                item["name"] = record.get("name")
+            if record.get("market"):
+                item["market"] = record.get("market")
+    symbol_rows = sorted(symbols.values(), key=lambda item: item.get("latest_at") or "", reverse=True)
+    return {
+        "records": sorted_records,
+        "symbols": symbol_rows,
+        "generated_at": now_iso(),
+    }
 
 
 def load_analysis(relative_path: str) -> dict[str, Any]:
@@ -404,10 +1019,29 @@ def runtime_conversation_from_process() -> dict[str, Any] | None:
     }
 
 
+def enrich_running_conversation(trace: dict[str, Any]) -> dict[str, Any]:
+    sections = trace.get("sections") if isinstance(trace.get("sections"), list) else []
+    if len(sections) > 1:
+        return trace
+    runtime = runtime_conversation_from_process()
+    if not runtime:
+        return trace
+    runtime_sections = runtime.get("sections") if isinstance(runtime.get("sections"), list) else []
+    note = text_section(
+        "Model Output Status",
+        "当前轮仍在运行中，TradingAgents 只先写入启动信息。各分析师报告、投资辩论和组合经理结论会在模型返回后一次性写入。\n\n"
+        "原始 <think>/<reasoning> 隐藏推理会被清理；看板展示的是可审阅的分析报告和最终投资论证，而不是模型草稿。",
+    )
+    return {
+        **trace,
+        "sections": sections + [note] + runtime_sections,
+    }
+
+
 def load_current_conversation() -> dict[str, Any] | None:
     trace = read_json(CURRENT_CONVERSATION_PATH)
     if isinstance(trace, dict) and trace.get("status") == "running":
-        return trace
+        return enrich_running_conversation(trace)
     runtime = runtime_conversation_from_process()
     if runtime:
         return runtime
@@ -459,6 +1093,8 @@ def load_conversation(trace_id: str) -> dict[str, Any]:
     data = read_json(path)
     if not isinstance(data, dict):
         raise ValueError("conversation file is not JSON")
+    if data.get("status") == "running":
+        return enrich_running_conversation(data)
     return data
 
 
@@ -504,7 +1140,6 @@ def loop_status() -> dict[str, Any]:
 
 
 def dashboard_summary() -> dict[str, Any]:
-    arena = client()
     market = os.getenv("SIGNAL_ARENA_MARKET", "US")
     history = [summarize_run(row) for row in read_jsonl_tail(RUNS_PATH, 25)]
     latest = latest_agent_run()
@@ -518,24 +1153,65 @@ def dashboard_summary() -> dict[str, Any]:
         "history": history,
         "analysis_logs": list_analysis_logs(),
         "stock_selection": read_json(LAST_SELECTION_PATH),
+        "preopen_selection": latest_preopen_selections(),
         "current_conversation": conversation_summary(load_current_conversation() or {}),
         "conversation_history": list_conversations(30),
         "cron_log_tail": tail_text(CRON_LOG_PATH, 100),
         "loop_log_tail": tail_text(LOOP_LOG_PATH, 120),
         "jobs": list_jobs(),
     }
-    summary["arena_home"] = try_call("home", arena.home) if arena.api_key else {"ok": False, "error": "No API key"}
-    summary["arena_portfolio"] = try_call("portfolio", arena.portfolio) if arena.api_key else {"ok": False, "error": "No API key"}
-    summary["arena_snapshots"] = try_call("snapshots", arena.snapshots) if arena.api_key else {"ok": False, "error": "No API key"}
+    has_api_key = bool(os.getenv(API_KEY_ENV))
+    remote_calls: dict[str, Any] = {
+        "top_movers": client(timeout=10).top_movers,
+        "stocks": lambda: client(timeout=12).stocks(market, 8),
+        "leaderboard": client(timeout=env_int("SIGNAL_DASHBOARD_LEADERBOARD_TIMEOUT", 20)).leaderboard,
+    }
+    if has_api_key:
+        remote_calls.update(
+            {
+                "arena_home": client(timeout=env_int("SIGNAL_DASHBOARD_HOME_TIMEOUT", 8)).home,
+                "arena_portfolio": client(timeout=env_int("SIGNAL_DASHBOARD_PORTFOLIO_TIMEOUT", 20)).portfolio,
+                "arena_snapshots": client(timeout=env_int("SIGNAL_DASHBOARD_SNAPSHOTS_TIMEOUT", 30)).snapshots,
+                "arena_trades": client(timeout=env_int("SIGNAL_DASHBOARD_TRADES_TIMEOUT", 20)).trades,
+            }
+        )
+    else:
+        summary["arena_home"] = {"ok": False, "error": "No API key"}
+        summary["arena_portfolio"] = {"ok": False, "error": "No API key"}
+        summary["arena_snapshots"] = {"ok": False, "error": "No API key"}
+        summary["arena_trades"] = {"ok": False, "error": "No API key"}
+
+    if remote_calls:
+        with ThreadPoolExecutor(max_workers=min(6, len(remote_calls))) as executor:
+            futures = {
+                executor.submit(try_call, name, func): name
+                for name, func in remote_calls.items()
+            }
+            for future in as_completed(futures):
+                summary[futures[future]] = future.result()
+
+    if summary.get("arena_portfolio", {}).get("ok"):
+        cache_portfolio_result(summary["arena_portfolio"])
+    else:
+        cached_portfolio = read_cached_portfolio_result(
+            env_int("SIGNAL_DASHBOARD_PORTFOLIO_CACHE_MAX_AGE_HOURS", 36)
+        )
+        if cached_portfolio:
+            live_error = summary.get("arena_portfolio", {}).get("error")
+            summary["arena_portfolio"] = {
+                **cached_portfolio,
+                "ok": False,
+                "live_error": live_error,
+                "error": live_error or "Using cached portfolio because live portfolio API is unavailable.",
+            }
+
     summary["portfolio_history"] = merge_live_portfolio_snapshot(
         snapshot_history(summary["arena_snapshots"]),
         current_portfolio_snapshot(summary["arena_home"], summary["arena_portfolio"]),
     )
-    if not summary["portfolio_history"] and arena.api_key:
+    if not summary["portfolio_history"] and has_api_key:
         summary["portfolio_history"] = record_portfolio_history(summary["arena_home"], summary["arena_portfolio"])
-    summary["top_movers"] = try_call("top_movers", arena.top_movers)
-    summary["stocks"] = try_call("stocks", lambda: arena.stocks(market, 8))
-    summary["leaderboard"] = try_call("leaderboard", arena.leaderboard)
+    summary["decision_timeline"] = build_decision_timeline(summary.get("arena_trades"))
     return summary
 
 
@@ -870,15 +1546,73 @@ HTML_PAGE = r"""<!doctype html>
     .card-list { display: grid; gap: 10px; }
     .mini-card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--panel2); }
 
+    /* ── Decision Provenance ────────────────────── */
+    .decision-shell { display: grid; gap: 14px; }
+    .decision-toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; flex-wrap: wrap;
+    }
+    .decision-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .decision-controls select { min-width: 210px; background: #08111d; }
+    .decision-grid { display: grid; grid-template-columns: 1.55fr .85fr; gap: 12px; }
+    .decision-panel {
+      border: 1px solid var(--line); border-radius: var(--radius);
+      background: var(--panel2); padding: 14px; min-width: 0;
+    }
+    .decision-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+    .decision-stat {
+      border: 1px solid rgba(36,53,72,.9); border-radius: 8px;
+      background: #091422; padding: 10px 12px; min-height: 68px;
+    }
+    .decision-stat .stat-value { font-size: 19px; font-weight: 800; margin-top: 5px; overflow-wrap: anywhere; }
+    .decision-chart { position: relative; height: 334px; border: 1px solid #1a2b3e; border-radius: 8px; background: #050b14; overflow: hidden; }
+    .decision-chart svg { width: 100%; height: 100%; display: block; }
+    .decision-price-line { fill: none; stroke: var(--accent); stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+    .decision-price-area { fill: rgba(96,165,250,.08); stroke: none; }
+    .decision-marker { cursor: pointer; stroke: #07101b; stroke-width: 2.5; filter: drop-shadow(0 4px 8px rgba(0,0,0,.42)); }
+    .decision-marker.selected { stroke: #fff; stroke-width: 3.2; }
+    .decision-buy { fill: var(--good); }
+    .decision-sell { fill: var(--bad); }
+    .decision-hold { fill: var(--warn); }
+    .decision-axis-label { fill: var(--muted); font-size: 11px; font-weight: 650; }
+    .decision-tooltip {
+      position: fixed; z-index: 40; max-width: 300px;
+      background: #07101b; border: 1px solid var(--line2);
+      border-radius: 8px; padding: 10px 12px;
+      box-shadow: 0 16px 42px rgba(0,0,0,.55);
+      color: var(--text); pointer-events: none; font-size: 12px; line-height: 1.45;
+    }
+    .decision-legend { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 9px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; }
+    .decision-detail { display: grid; gap: 10px; }
+    .detail-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; font-size: 13px; }
+    .detail-label { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+    .detail-value { overflow-wrap: anywhere; }
+    .source-chip {
+      display: inline-flex; align-items: center; border: 1px solid var(--line2);
+      background: rgba(255,255,255,.04); border-radius: 999px;
+      padding: 3px 9px; color: #b9c9dc; font-size: 11px; font-weight: 700;
+    }
+    .decision-table-wrap { max-height: 430px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+    .decision-table-wrap table { min-width: 980px; }
+    .decision-table-wrap tr { cursor: pointer; }
+    .decision-table-wrap tr.selected td { background: rgba(45,212,191,.07); }
+    .timing-good { color: var(--good); font-weight: 750; }
+    .timing-bad { color: var(--bad); font-weight: 750; }
+    .timing-neutral { color: var(--warn); font-weight: 750; }
+
     /* ── Responsive ─────────────────────────────── */
     @media (max-width: 1100px) {
       .chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .decision-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 980px) {
       main { grid-template-columns: 1fr; }
       .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .chart-grid { grid-template-columns: 1fr; }
       .conversation-grid { grid-template-columns: 1fr; }
+      .decision-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 560px) {
       header { align-items: flex-start; flex-direction: column; }
@@ -917,6 +1651,45 @@ HTML_PAGE = r"""<!doctype html>
         <span class="sub" id="chartMeta">Waiting for history data</span>
       </div>
       <div class="chart-grid" id="portfolioCharts"></div>
+    </section>
+
+    <section class="span">
+      <div class="decision-shell">
+        <div class="decision-toolbar">
+          <div>
+            <span class="section-title">Agent Decision Provenance</span>
+            <div class="sub" id="decisionMeta">Waiting for decision records</div>
+          </div>
+          <div class="decision-controls">
+            <select id="decisionSymbolSelect" onchange="selectDecisionSymbol(this.value)"></select>
+            <button class="tab active" data-decision-action="all" onclick="setDecisionAction('all', event)">All</button>
+            <button class="tab" data-decision-action="buy" onclick="setDecisionAction('buy', event)">Buy</button>
+            <button class="tab" data-decision-action="hold" onclick="setDecisionAction('hold', event)">Hold</button>
+            <button class="tab" data-decision-action="sell" onclick="setDecisionAction('sell', event)">Sell</button>
+          </div>
+        </div>
+        <div class="decision-grid">
+          <div class="decision-panel">
+            <div class="decision-stat-grid" id="decisionStats"></div>
+            <div class="decision-chart" id="decisionChart"></div>
+            <div class="decision-legend">
+              <span class="legend-item"><span class="legend-dot decision-buy"></span>Buy</span>
+              <span class="legend-item"><span class="legend-dot decision-hold"></span>Hold</span>
+              <span class="legend-item"><span class="legend-dot decision-sell"></span>Sell</span>
+              <span class="legend-item"><span class="legend-dot" style="background:var(--accent)"></span>Observed price</span>
+            </div>
+          </div>
+          <div class="decision-panel">
+            <div class="between" style="margin-bottom:10px">
+              <span class="section-title" style="font-size:13px">Selected Record</span>
+              <span class="source-chip" id="decisionSource">N/A</span>
+            </div>
+            <div class="decision-detail" id="decisionDetail"></div>
+          </div>
+        </div>
+        <div class="decision-table-wrap" id="decisionTable"></div>
+      </div>
+      <div id="decisionTooltip" class="decision-tooltip hidden"></div>
     </section>
 
     <section class="span">
@@ -992,6 +1765,9 @@ HTML_PAGE = r"""<!doctype html>
     let DATA = null;
     let activeTab = 'history';
     let selectedConversationId = '';
+    let selectedDecisionSymbol = '';
+    let selectedDecisionId = '';
+    let decisionActionFilter = 'all';
 
     function authHeaders() { return {'Content-Type': 'application/json'}; }
     function fmt(n) {
@@ -1010,6 +1786,12 @@ HTML_PAGE = r"""<!doctype html>
       const value = num(n);
       if (value === null) return 'N/A';
       return value.toLocaleString(undefined, {notation: 'compact', maximumFractionDigits: 2});
+    }
+    function priceFmt(n, currency='') {
+      const value = num(n);
+      if (value === null) return 'N/A';
+      const prefix = currency === 'USD' ? '$' : currency === 'CNY' ? '¥' : currency === 'HKD' ? 'HK$' : '';
+      return prefix + value.toLocaleString(undefined, {maximumFractionDigits: value >= 100 ? 2 : 4});
     }
     function timeLabel(value) {
       if (!value) return '';
@@ -1122,21 +1904,253 @@ HTML_PAGE = r"""<!doctype html>
         }),
       ].join('');
     }
+    function decisionTime(row) {
+      return row?.selected_at || row?.decided_at || row?.trade_date || '';
+    }
+    function decisionRecords() {
+      return DATA?.decision_timeline?.records || [];
+    }
+    function sortedDecisionRows(rows) {
+      return rows.slice().sort((a, b) => String(decisionTime(a)).localeCompare(String(decisionTime(b))));
+    }
+    function decisionById(id) {
+      return decisionRecords().find(row => row.id === id);
+    }
+    function timingInfo(row, latestPrice) {
+      const price = num(row?.price);
+      const latest = num(latestPrice);
+      if (price === null || latest === null || price === 0) return {text: 'N/A', cls: 'muted', edge: null};
+      const delta = (latest - price) / price;
+      if (row.action === 'buy') {
+        return {text: `买后 ${delta >= 0 ? '+' : ''}${(delta * 100).toFixed(2)}%`, cls: delta >= 0 ? 'timing-good' : 'timing-bad', edge: delta};
+      }
+      if (row.action === 'sell') {
+        const edge = -delta;
+        return {text: edge >= 0 ? `卖后回落 ${(edge * 100).toFixed(2)}%` : `卖后上涨 ${(-edge * 100).toFixed(2)}%`, cls: edge >= 0 ? 'timing-good' : 'timing-bad', edge};
+      }
+      return {text: `观察 ${delta >= 0 ? '+' : ''}${(delta * 100).toFixed(2)}%`, cls: Math.abs(delta) < 0.01 ? 'timing-neutral' : delta > 0 ? 'timing-good' : 'timing-bad', edge: delta};
+    }
+    function decisionStat(label, value, sub='') {
+      return `<div class="decision-stat"><div class="label">${esc(label)}</div><div class="stat-value">${esc(value)}</div><div class="sub">${esc(sub)}</div></div>`;
+    }
+    function sourceLabel(row) {
+      return row?.source_label || row?.source || 'N/A';
+    }
+    function visibleDecisionRows() {
+      const rows = decisionRecords().filter(row => !selectedDecisionSymbol || row.symbol === selectedDecisionSymbol);
+      return decisionActionFilter === 'all' ? rows : rows.filter(row => row.action === decisionActionFilter);
+    }
+    function selectDecisionSymbol(symbol) {
+      selectedDecisionSymbol = symbol;
+      selectedDecisionId = '';
+      renderDecisionExplorer();
+    }
+    function setDecisionAction(action, event) {
+      decisionActionFilter = action;
+      selectedDecisionId = '';
+      for (const btn of document.querySelectorAll('[data-decision-action]')) {
+        btn.classList.toggle('active', btn.dataset.decisionAction === action);
+      }
+      if (event?.target) event.target.classList.add('active');
+      renderDecisionExplorer();
+    }
+    function selectDecisionRecord(id) {
+      selectedDecisionId = id;
+      renderDecisionExplorer();
+    }
+    function showDecisionTooltip(event, id) {
+      const row = decisionById(id);
+      if (!row) return;
+      const tip = document.getElementById('decisionTooltip');
+      tip.innerHTML = `<strong>${esc(row.symbol)} ${pill(row.action)}</strong>
+        <div class="sub">${esc(timeLabel(decisionTime(row)))} · ${esc(sourceLabel(row))}</div>
+        <div style="margin-top:6px">Price: <strong>${esc(priceFmt(row.price, row.currency))}</strong> · Shares: <strong>${esc(fmt(row.shares))}</strong></div>
+        <div class="muted" style="margin-top:5px">${esc(row.reason || row.status_detail || '').slice(0,180)}</div>`;
+      tip.classList.remove('hidden');
+      const left = Math.min(event.clientX + 14, window.innerWidth - tip.offsetWidth - 16);
+      const top = Math.min(event.clientY + 14, window.innerHeight - tip.offsetHeight - 16);
+      tip.style.left = Math.max(12, left) + 'px';
+      tip.style.top = Math.max(12, top) + 'px';
+    }
+    function hideDecisionTooltip() {
+      document.getElementById('decisionTooltip')?.classList.add('hidden');
+    }
+    function renderDecisionChart(symbolRows, latestPrice) {
+      const chart = document.getElementById('decisionChart');
+      const priced = sortedDecisionRows(symbolRows)
+        .map((row, index) => ({row, index, price: num(row.price), ms: Date.parse(decisionTime(row))}))
+        .filter(point => point.price !== null);
+      if (!priced.length) {
+        chart.innerHTML = '<div class="empty-chart" style="height:100%;border:none">No price observations for this symbol yet</div>';
+        return;
+      }
+      const width = 980, height = 334, left = 56, right = 26, top = 24, bottom = 46;
+      let minPrice = Math.min(...priced.map(p => p.price));
+      let maxPrice = Math.max(...priced.map(p => p.price));
+      if (minPrice === maxPrice) {
+        minPrice -= Math.max(1, Math.abs(minPrice) * 0.02);
+        maxPrice += Math.max(1, Math.abs(maxPrice) * 0.02);
+      }
+      const validTimes = priced.map(p => p.ms).filter(ms => Number.isFinite(ms));
+      const minTime = validTimes.length ? Math.min(...validTimes) : 0;
+      const maxTime = validTimes.length ? Math.max(...validTimes) : priced.length - 1;
+      const sameTime = minTime === maxTime;
+      const x = (point, i) => sameTime
+        ? left + (priced.length === 1 ? (width - left - right) / 2 : i * (width - left - right) / (priced.length - 1))
+        : left + ((Number.isFinite(point.ms) ? point.ms : minTime) - minTime) * (width - left - right) / (maxTime - minTime);
+      const y = price => top + (maxPrice - price) * (height - top - bottom) / (maxPrice - minPrice);
+      const line = priced.map((p, i) => `${i ? 'L' : 'M'} ${x(p, i).toFixed(1)} ${y(p.price).toFixed(1)}`).join(' ');
+      const area = `${line} L ${x(priced[priced.length - 1], priced.length - 1).toFixed(1)} ${height - bottom} L ${x(priced[0], 0).toFixed(1)} ${height - bottom} Z`;
+      const markerRows = priced.filter(p => decisionActionFilter === 'all' || p.row.action === decisionActionFilter);
+      const markers = markerRows.map(point => {
+        const i = priced.indexOf(point);
+        const cls = `decision-marker decision-${point.row.action || 'hold'} ${point.row.id === selectedDecisionId ? 'selected' : ''}`;
+        return `<circle class="${cls}" data-decision-id="${esc(point.row.id)}" cx="${x(point, i).toFixed(1)}" cy="${y(point.price).toFixed(1)}" r="${point.row.id === selectedDecisionId ? 8 : 6.5}"></circle>`;
+      }).join('');
+      chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Agent decision timeline">
+        <line class="grid-line" x1="${left}" y1="${top}" x2="${width - right}" y2="${top}"></line>
+        <line class="grid-line" x1="${left}" y1="${height / 2}" x2="${width - right}" y2="${height / 2}"></line>
+        <line class="axis" x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}"></line>
+        <line class="axis" x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}"></line>
+        <text class="decision-axis-label" x="10" y="${top + 4}">${esc(priceFmt(maxPrice))}</text>
+        <text class="decision-axis-label" x="10" y="${height - bottom + 4}">${esc(priceFmt(minPrice))}</text>
+        <text class="decision-axis-label" x="${left}" y="${height - 16}">${esc(timeLabel(decisionTime(priced[0].row)))}</text>
+        <text class="decision-axis-label" text-anchor="end" x="${width - right}" y="${height - 16}">${esc(timeLabel(decisionTime(priced[priced.length - 1].row)))}</text>
+        ${priced.length > 1 ? `<path class="decision-price-area" d="${area}"></path><path class="decision-price-line" d="${line}"></path>` : ''}
+        ${markers}
+      </svg>`;
+      for (const marker of chart.querySelectorAll('[data-decision-id]')) {
+        marker.addEventListener('mouseenter', event => showDecisionTooltip(event, marker.dataset.decisionId));
+        marker.addEventListener('mousemove', event => showDecisionTooltip(event, marker.dataset.decisionId));
+        marker.addEventListener('mouseleave', hideDecisionTooltip);
+        marker.addEventListener('click', () => selectDecisionRecord(marker.dataset.decisionId));
+      }
+    }
+    function renderDecisionDetail(row, latestPrice) {
+      const detail = document.getElementById('decisionDetail');
+      const source = document.getElementById('decisionSource');
+      if (!row) {
+        source.textContent = 'N/A';
+        detail.innerHTML = '<div class="muted">No record selected.</div>';
+        return;
+      }
+      const timing = timingInfo(row, latestPrice);
+      source.textContent = sourceLabel(row);
+      detail.innerHTML = `
+        <div class="between"><div><strong>${esc(row.symbol)}</strong> <span class="muted">${esc(row.name || row.arena_symbol || '')}</span></div>${pill(row.action)}</div>
+        <div class="detail-row"><div class="detail-label">Selected</div><div class="detail-value">${esc(row.selected_at || row.decided_at || row.trade_date || 'N/A')}</div></div>
+        <div class="detail-row"><div class="detail-label">Shares</div><div class="detail-value">${esc(fmt(row.shares))}</div></div>
+        <div class="detail-row"><div class="detail-label">Price</div><div class="detail-value">${esc(priceFmt(row.price, row.currency))} <span class="muted">${esc(row.price_kind || '')}</span></div></div>
+        <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${esc(row.status || 'N/A')} ${row.execute_trade ? '<span class="source-chip">live</span>' : '<span class="source-chip">dry-run/log</span>'}</div></div>
+        <div class="detail-row"><div class="detail-label">Timing</div><div class="detail-value ${timing.cls}">${esc(timing.text)}</div></div>
+        <div class="detail-row"><div class="detail-label">Score</div><div class="detail-value">${esc(row.score !== null && row.score !== undefined ? fmt(row.score) : 'N/A')} ${row.confidence !== null && row.confidence !== undefined ? `· confidence ${esc(fmt(row.confidence))}` : ''}</div></div>
+        <div class="detail-row"><div class="detail-label">Reason</div><div class="detail-value">${esc(row.reason || row.status_detail || 'N/A')}</div></div>
+        ${row.risk ? `<div class="detail-row"><div class="detail-label">Risk</div><div class="detail-value">${esc(row.risk)}</div></div>` : ''}
+        ${row.evidence?.length ? `<div class="detail-row"><div class="detail-label">Evidence</div><div class="detail-value">${row.evidence.map(item => `<div>${esc(item)}</div>`).join('')}</div></div>` : ''}
+        ${row.signal_preview ? `<div><h3>Decision Note</h3><pre style="max-height:150px">${esc(row.signal_preview)}</pre></div>` : ''}
+        ${row.trace_id || row.trade_id || row.source_path ? `<div class="sub">${esc([row.trace_id ? `trace ${row.trace_id}` : '', row.trade_id ? `trade ${row.trade_id}` : '', row.source_path || ''].filter(Boolean).join(' · '))}</div>` : ''}
+      `;
+    }
+    function renderDecisionTable(rows, latestPrice) {
+      const bodyRows = rows.slice().reverse().slice(0, 120);
+      document.getElementById('decisionTable').innerHTML = bodyRows.length ? `<table><thead><tr><th>Selected At</th><th>Symbol</th><th>Action</th><th>Shares</th><th>Price</th><th>Status</th><th>Timing</th><th>Provenance</th></tr></thead><tbody>${bodyRows.map(row => {
+        const timing = timingInfo(row, latestPrice);
+        return `<tr class="${row.id === selectedDecisionId ? 'selected' : ''}" onclick="selectDecisionRecord('${esc(row.id)}')">
+          <td style="white-space:nowrap;font-size:12px">${esc(row.selected_at || row.decided_at || row.trade_date || '')}</td>
+          <td><strong>${esc(row.symbol)}</strong><div class="sub">${esc(row.name || row.arena_symbol || '')}</div></td>
+          <td>${pill(row.action)}</td>
+          <td>${esc(fmt(row.shares))}</td>
+          <td>${esc(priceFmt(row.price, row.currency))}<div class="sub">${esc(row.price_kind || '')}</div></td>
+          <td>${esc(row.status || '')}<div class="sub">${esc(row.status_detail || '').slice(0,80)}</div></td>
+          <td class="${timing.cls}">${esc(timing.text)}</td>
+          <td><span class="source-chip">${esc(sourceLabel(row))}</span><div class="sub">${esc(row.reason || '').slice(0,150)}</div></td>
+        </tr>`;
+      }).join('')}</tbody></table>` : '<div class="empty-chart">No records for the selected filters</div>';
+    }
+    function renderDecisionExplorer() {
+      const payload = DATA?.decision_timeline || {};
+      const records = decisionRecords();
+      const symbols = payload.symbols || [];
+      const select = document.getElementById('decisionSymbolSelect');
+      if (!records.length || !symbols.length) {
+        document.getElementById('decisionMeta').textContent = 'No local decision records yet';
+        select.innerHTML = '<option value="">No symbols</option>';
+        document.getElementById('decisionStats').innerHTML = '';
+        document.getElementById('decisionChart').innerHTML = '<div class="empty-chart" style="height:100%;border:none">Waiting for TradingAgents decisions</div>';
+        renderDecisionDetail(null, null);
+        renderDecisionTable([], null);
+        return;
+      }
+      if (!selectedDecisionSymbol || !symbols.some(item => item.symbol === selectedDecisionSymbol)) {
+        selectedDecisionSymbol = (symbols.find(item => item.priced_count)?.symbol || symbols[0].symbol);
+      }
+      select.innerHTML = symbols.map(item => `<option value="${esc(item.symbol)}" ${item.symbol === selectedDecisionSymbol ? 'selected' : ''}>${esc(item.symbol)}${item.name ? ` · ${esc(item.name)}` : ''} (${item.count})</option>`).join('');
+      for (const btn of document.querySelectorAll('[data-decision-action]')) {
+        btn.classList.toggle('active', btn.dataset.decisionAction === decisionActionFilter);
+      }
+      const symbolRows = sortedDecisionRows(records.filter(row => row.symbol === selectedDecisionSymbol));
+      const priced = symbolRows.filter(row => num(row.price) !== null);
+      const latestPriced = priced[priced.length - 1] || {};
+      const latestPrice = latestPriced.price;
+      const visible = sortedDecisionRows(visibleDecisionRows());
+      if (!selectedDecisionId || !visible.some(row => row.id === selectedDecisionId)) {
+        selectedDecisionId = (visible.filter(row => row.price !== null).slice(-1)[0] || visible.slice(-1)[0] || {}).id || '';
+      }
+      const selected = decisionById(selectedDecisionId);
+      const counts = symbolRows.reduce((acc, row) => {
+        acc[row.action] = (acc[row.action] || 0) + 1;
+        return acc;
+      }, {});
+      const latestAction = symbolRows[symbolRows.length - 1]?.action || 'N/A';
+      document.getElementById('decisionMeta').textContent = `${records.length} records · ${symbols.length} symbols · generated ${payload.generated_at || ''}`;
+      document.getElementById('decisionStats').innerHTML = [
+        decisionStat('Records', String(symbolRows.length), `${counts.buy || 0} buy · ${counts.hold || 0} hold · ${counts.sell || 0} sell`),
+        decisionStat('Latest Action', latestAction.toUpperCase(), symbolRows[symbolRows.length - 1]?.selected_at || ''),
+        decisionStat('Latest Price', priceFmt(latestPrice, latestPriced.currency), latestPriced.price_kind || 'observed'),
+        decisionStat('Price Points', String(priced.length), selectedDecisionSymbol),
+      ].join('');
+      renderDecisionChart(symbolRows, latestPrice);
+      renderDecisionDetail(selected, latestPrice);
+      renderDecisionTable(visible, latestPrice);
+    }
     function render() {
       const home = DATA.arena_home?.data?.data || {};
-      const portfolio = home.portfolio || DATA.arena_portfolio?.data?.data?.portfolio || {};
+      const generatedAtMs = Date.parse(DATA.generated_at || '');
+      const freshPortfolioSnapshots = (DATA.portfolio_history || []).filter(row => {
+        const ts = Date.parse(row.timestamp || row.snapshot_time || row.snapshot_date || '');
+        if (!Number.isFinite(ts) || !Number.isFinite(generatedAtMs)) return false;
+        return Math.abs(generatedAtMs - ts) <= 36 * 60 * 60 * 1000;
+      });
+      const latestPortfolioSnapshot = freshPortfolioSnapshots.slice(-1)[0] || {};
+      const portfolioCandidates = [
+        home.portfolio,
+        DATA.arena_portfolio?.data?.data?.portfolio,
+        latestPortfolioSnapshot,
+      ].filter(item => item && item.total_value !== undefined && item.total_value !== null);
+      const portfolio = portfolioCandidates[0] || {};
+      const portfolioSource = home.portfolio
+        ? 'home API'
+        : DATA.arena_portfolio?.data?.data?.portfolio
+          ? (DATA.arena_portfolio?.from_cache ? `cached portfolio · ${DATA.arena_portfolio.cached_at || ''}` : 'portfolio API')
+          : latestPortfolioSnapshot.total_value !== undefined ? 'snapshots API' : 'Signal Arena';
+      const rankValue = home.rank ?? portfolio.rank;
+      const participantValue = home.total_participants ?? DATA.leaderboard?.data?.data?.total;
+      const rankText = rankValue !== undefined && rankValue !== null
+        ? `Rank ${rankValue} / ${participantValue ?? 'N/A'}`
+        : `Rank unavailable · ${DATA.arena_home?.ok ? 'no home rank' : 'home API timeout'}`;
       const loopText = DATA.loop?.active ? 'Loop running' : `Loop ${DATA.loop?.status || 'unknown'}`;
       document.getElementById('subtitle').textContent = `Updated ${DATA.generated_at} · ${loopText} · cron ${DATA.cron?.installed ? 'installed' : 'not installed'}`;
       document.getElementById('authPill').textContent = DATA.config.api_key_configured ? 'API Key OK' : 'No API Key';
       document.getElementById('authPill').className = 'pill ' + (DATA.config.api_key_configured ? 'buy' : 'sell');
       document.getElementById('metrics').innerHTML = [
-        metric('Total Value', fmt(portfolio.total_value), 'Signal Arena'),
-        metric('Cash', fmt(portfolio.cash), home.market_status || ''),
-        metric('Return Rate', portfolio.return_rate !== undefined ? (Number(portfolio.return_rate) * 100).toFixed(2) + '%' : 'N/A', `Rank ${home.rank ?? 'N/A'} / ${home.total_participants ?? 'N/A'}`),
+        metric('Total Value', fmt(portfolio.total_value), portfolioSource),
+        metric('Cash', fmt(portfolio.cash), home.market_status || portfolio.market_status || portfolioSource),
+        metric('Return Rate', portfolio.return_rate !== undefined ? (Number(portfolio.return_rate) * 100).toFixed(2) + '%' : 'N/A', rankText),
         metric('Last Action', DATA.latest_run?.action || 'N/A', DATA.latest_run?.symbol || DATA.latest_run?.mode || ''),
         metric('Last Trade', DATA.latest_run?.trade_status || 'N/A', DATA.latest_run?.trade_reason || (DATA.latest_run?.shares !== undefined ? `shares ${DATA.latest_run.shares}` : '')),
       ].join('');
       renderCharts(portfolio);
+      renderDecisionExplorer();
       renderConversationSummary();
       renderPortfolio();
       renderSelection();
@@ -1279,8 +2293,23 @@ HTML_PAGE = r"""<!doctype html>
     function renderPortfolio() {
       const p = DATA.arena_portfolio?.data?.data || {};
       const holdings = p.holdings || [];
-      let html = `<div class="sub" style="margin-bottom:10px">Agent: <strong>${esc(p.agent?.username || DATA.arena_home?.data?.data?.agent?.username || 'N/A')}</strong></div>`;
-      if (!holdings.length) html += '<p class="muted">No positions.</p>';
+      const portfolio = p.portfolio || {};
+      const source = DATA.arena_portfolio?.from_cache
+        ? `cached ${DATA.arena_portfolio.cached_at || ''}`
+        : DATA.arena_portfolio?.ok ? 'live portfolio API' : 'portfolio API unavailable';
+      let html = `<div class="sub" style="margin-bottom:10px">Agent: <strong>${esc(p.agent?.username || DATA.arena_home?.data?.data?.agent?.username || 'N/A')}</strong> · ${esc(source)}</div>`;
+      if (portfolio.total_value !== undefined || portfolio.cash !== undefined) {
+        html += `<div class="mini-grid" style="margin-bottom:10px">
+          ${metric('Total Value', fmt(portfolio.total_value), 'portfolio')}
+          ${metric('Cash', fmt(portfolio.cash), 'available')}
+          ${metric('Holdings Value', fmt(portfolio.holdings_value), 'positions')}
+          ${metric('Return', pct(portfolio.return_rate), 'portfolio')}
+        </div>`;
+      }
+      if (!holdings.length) {
+        const detail = DATA.arena_portfolio?.live_error || DATA.arena_portfolio?.error || '';
+        html += `<p class="muted">No positions available${detail ? ` · ${esc(detail)}` : ''}.</p>`;
+      }
       else html += `<table><thead><tr><th>Symbol</th><th>Name</th><th>Shares</th><th>Value</th><th>P&amp;L</th></tr></thead><tbody>${holdings.map(h => {
         const pnl = h.pnl ?? h.profit_loss;
         const rate = h.profit_rate !== undefined ? ` (${pct(h.profit_rate)})` : '';
@@ -1299,20 +2328,57 @@ HTML_PAGE = r"""<!doctype html>
       const rows = DATA.leaderboard?.data?.data?.leaderboard || [];
       document.getElementById('leaderboard').innerHTML = `<table><thead><tr><th>Rank</th><th>Agent</th><th>Total Value</th><th>Return</th></tr></thead><tbody>${rows.slice(0,8).map(r => `<tr><td style="font-weight:700;color:var(--accent)">#${r.rank}</td><td>${esc(r.agent?.username || r.agent?.nickname)}</td><td>${fmt(r.total_value)}</td><td style="font-weight:700" class="${r.return_rate>=0?'buy':'sell'}">${(r.return_rate*100).toFixed(2)}%</td></tr>`).join('')}</tbody></table>`;
     }
+    function reasonText(row) {
+      const values = [row.selector_reason, row.reason, ...(row.reasons || []), ...(row.penalties || [])]
+        .filter(Boolean)
+        .map(v => String(v));
+      return [...new Set(values)].join(' · ');
+    }
+    function symbolKey(value) {
+      const text = String(value || '').toLowerCase();
+      if (text.startsWith('gb_')) return text.slice(3);
+      if (/^sh\d{6}$/.test(text)) return text.slice(2) + '.ss';
+      if (/^sz\d{6}$/.test(text)) return text.slice(2) + '.sz';
+      if (/^hk\d{5}$/.test(text)) return text.slice(2) + '.hk';
+      return text;
+    }
+    function renderPreopenSelection() {
+      const markets = DATA.preopen_selection?.markets || {};
+      const entries = Object.entries(markets);
+      if (!entries.length) return '';
+      return `<div class="mini-card" style="margin-bottom:10px">
+        <div class="between"><strong>GPT Pre-open Picks</strong><span class="pill hold">${esc(DATA.preopen_selection?.timestamp || '')}</span></div>
+        ${entries.map(([market, payload]) => {
+          const selector = payload.selector || {};
+          const picks = payload.picks || [];
+          const analyses = payload.analyses || [];
+          return `<div style="margin-top:10px">
+            <div class="sub" style="font-weight:700">${esc(market)} · ${esc(selector.model || '')}${selector.web_search ? ' · web search' : ''}</div>
+            <table style="margin-top:6px"><thead><tr><th>Pick</th><th>Confidence</th><th>GPT Reason</th><th>Pre-open TA</th></tr></thead><tbody>${picks.map(pick => {
+              const analysis = analyses.find(item => symbolKey(item.symbol) === symbolKey(pick.symbol)) || {};
+              return `<tr><td style="font-weight:600">${esc(pick.symbol)} <span class="muted">${esc(pick.name || '')}</span></td><td>${fmt(pick.confidence)}</td><td class="muted">${esc(pick.reason || '').slice(0,220)}</td><td>${esc([analysis.rating, analysis.action].filter(Boolean).join(' / ') || 'pending')}</td></tr>`;
+            }).join('')}</tbody></table>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }
     function renderSelection() {
       const selection = DATA.stock_selection || DATA.latest_run?.stock_selection;
+      const preopenHtml = renderPreopenSelection();
       if (!selection) {
-        document.getElementById('stockSelection').innerHTML = '<span class="muted">Candidates will appear after next auto-selection round.</span>';
+        document.getElementById('stockSelection').innerHTML = preopenHtml || '<span class="muted">Candidates will appear after next auto-selection round.</span>';
         return;
       }
       const selected = selection.selected || {};
       const rows = selection.top_candidates || [];
-      document.getElementById('stockSelection').innerHTML = `<div class="mini-card" style="margin-bottom:10px">
+      const label = selection.mode === 'gpt_preopen' ? 'Live Agent Selection (GPT Pre-open)' : 'Live Agent Selection';
+      document.getElementById('stockSelection').innerHTML = `${preopenHtml}<div class="mini-card" style="margin-bottom:10px">
+        <div class="sub" style="margin-bottom:6px;font-weight:700">${esc(label)}</div>
         <div class="between"><strong>${esc(selected.symbol || 'N/A')} ${esc(selected.name || '')}</strong><span class="pill buy">${esc(String(selected.score ?? 'N/A'))}</span></div>
         <div class="sub" style="margin-top:4px">${esc(selection.strategy || selection.mode || '')} · ${esc(selection.timestamp || '')}</div>
-        <div class="sub" style="margin-top:3px">${esc([...(selected.reasons || []), ...(selected.penalties || [])].join(' · '))}</div>
+        <div class="sub" style="margin-top:3px">${esc(reasonText(selected))}</div>
       </div>
-      <table><thead><tr><th>Candidate</th><th>Score</th><th>Change</th><th>Reasons</th></tr></thead><tbody>${rows.slice(0,6).map(row => `<tr><td style="font-weight:600">${esc(row.symbol)} <span class="muted">${esc(row.name || '')}</span></td><td>${fmt(row.score)}</td><td class="${row.change_rate >= 0 ? 'buy' : 'sell'}" style="font-weight:700">${(Number(row.change_rate || 0) * 100).toFixed(2)}%</td><td class="muted">${esc([...(row.reasons || []), ...(row.penalties || [])].join(' · ')).slice(0,180)}</td></tr>`).join('')}</tbody></table>`;
+      <table><thead><tr><th>Candidate</th><th>Score</th><th>Change</th><th>Reasons</th></tr></thead><tbody>${rows.slice(0,6).map(row => `<tr><td style="font-weight:600">${esc(row.symbol)} <span class="muted">${esc(row.name || '')}</span></td><td>${fmt(row.score)}</td><td class="${row.change_rate >= 0 ? 'buy' : 'sell'}" style="font-weight:700">${(Number(row.change_rate || 0) * 100).toFixed(2)}%</td><td class="muted">${esc(reasonText(row)).slice(0,220)}</td></tr>`).join('')}</tbody></table>`;
     }
     function renderTabs() {
       renderHistory();
@@ -1337,7 +2403,7 @@ HTML_PAGE = r"""<!doctype html>
       for (const tab of ['history','analyses','logs']) {
         document.getElementById('tab-' + tab).classList.toggle('hidden', tab !== name);
       }
-      for (const btn of document.querySelectorAll('.tab')) btn.classList.remove('active');
+      for (const btn of document.querySelectorAll('.tabs .tab')) btn.classList.remove('active');
       if (event?.target) event.target.classList.add('active');
     }
     refreshAll();
